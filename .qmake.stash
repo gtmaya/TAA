@@ -1,0 +1,30 @@
+QMAKE_CXX.INCDIRS = \
+    . \
+    /public/devel/2018/include \
+    /opt/rh/devtoolset-7/root/usr/include/c++/7 \
+    /opt/rh/devtoolset-7/root/usr/include/c++/7/x86_64-redhat-linux \
+    /opt/rh/devtoolset-7/root/usr/include/c++/7/backward \
+    /opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7/include \
+    /usr/local/include \
+    /opt/rh/devtoolset-7/root/usr/include \
+    /usr/include
+QMAKE_CXX.LIBDIRS = \
+    /public/devel/2018/lib64 \
+    /opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7 \
+    /opt/rh/devtoolset-7/root/usr/lib64 \
+    /lib64 \
+    /usr/lib64 \
+    . \
+    /public/devel/2018/lib \
+    /opt/rh/devtoolset-7/root/usr/lib \
+    /lib \
+    /usr/lib
+QMAKE_CXX.QT_COMPILER_STDCXX = 201402L
+QMAKE_CXX.QMAKE_GCC_MAJOR_VERSION = 7
+QMAKE_CXX.QMAKE_GCC_MINOR_VERSION = 3
+QMAKE_CXX.QMAKE_GCC_PATCH_VERSION = 1
+QMAKE_CXX.COMPILER_MACROS = \
+    QT_COMPILER_STDCXX \
+    QMAKE_GCC_MAJOR_VERSION \
+    QMAKE_GCC_MINOR_VERSION \
+    QMAKE_GCC_PATCH_VERSION
