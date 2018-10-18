@@ -555,10 +555,56 @@ obj/main.o: src/main.cpp include/renderscene.h \
 		include/usercamera.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/main.o src/main.cpp
 
-obj/usercamera.o: src/usercamera.cpp 
+obj/usercamera.o: src/usercamera.cpp include/usercamera.h \
+		/home/s4907224/NGL/include/ngl/Obj.h \
+		/home/s4907224/NGL/include/ngl/AbstractMesh.h \
+		/home/s4907224/NGL/include/ngl/Types.h \
+		/home/s4907224/NGL/gl3w/gl3w.h \
+		/home/s4907224/NGL/gl3w/glcorearb.h \
+		/home/s4907224/NGL/include/ngl/fmt/format.h \
+		/home/s4907224/NGL/include/ngl/fmt/format.cc \
+		/home/s4907224/NGL/include/ngl/NGLMessage.h \
+		/home/s4907224/NGL/include/ngl/MessageQueue/AbstractMessageConsumer.h \
+		/home/s4907224/NGL/include/ngl/BBox.h \
+		/home/s4907224/NGL/include/ngl/Vec3.h \
+		/home/s4907224/NGL/include/ngl/Vec4.h \
+		/home/s4907224/NGL/include/ngl/Vec2.h \
+		/home/s4907224/NGL/include/ngl/AbstractVAO.h \
+		/home/s4907224/NGL/include/ngl/RibExport.h \
+		/home/s4907224/NGL/include/ngl/Texture.h \
+		/home/s4907224/NGL/include/ngl/Image.h \
+		/home/s4907224/NGL/include/ngl/NGLassert.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/usercamera.o src/usercamera.cpp
 
-obj/renderscene.o: src/renderscene.cpp 
+obj/renderscene.o: src/renderscene.cpp include/renderscene.h \
+		/home/s4907224/NGL/include/ngl/Obj.h \
+		/home/s4907224/NGL/include/ngl/AbstractMesh.h \
+		/home/s4907224/NGL/include/ngl/Types.h \
+		/home/s4907224/NGL/gl3w/gl3w.h \
+		/home/s4907224/NGL/gl3w/glcorearb.h \
+		/home/s4907224/NGL/include/ngl/fmt/format.h \
+		/home/s4907224/NGL/include/ngl/fmt/format.cc \
+		/home/s4907224/NGL/include/ngl/NGLMessage.h \
+		/home/s4907224/NGL/include/ngl/MessageQueue/AbstractMessageConsumer.h \
+		/home/s4907224/NGL/include/ngl/BBox.h \
+		/home/s4907224/NGL/include/ngl/Vec3.h \
+		/home/s4907224/NGL/include/ngl/Vec4.h \
+		/home/s4907224/NGL/include/ngl/Vec2.h \
+		/home/s4907224/NGL/include/ngl/AbstractVAO.h \
+		/home/s4907224/NGL/include/ngl/RibExport.h \
+		/home/s4907224/NGL/include/ngl/Texture.h \
+		/home/s4907224/NGL/include/ngl/Image.h \
+		/home/s4907224/NGL/include/ngl/NGLassert.h \
+		/home/s4907224/NGL/include/ngl/NGLInit.h \
+		/home/s4907224/NGL/include/ngl/Singleton.h \
+		/home/s4907224/NGL/include/ngl/VAOPrimitives.h \
+		/home/s4907224/NGL/include/ngl/ShaderLib.h \
+		/home/s4907224/NGL/include/ngl/Shader.h \
+		/home/s4907224/NGL/include/ngl/ShaderProgram.h \
+		/home/s4907224/NGL/include/ngl/Util.h \
+		/home/s4907224/NGL/include/ngl/Mat2.h \
+		/home/s4907224/NGL/include/ngl/Mat3.h \
+		/home/s4907224/NGL/include/ngl/Mat4.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/renderscene.o src/renderscene.cpp
 
 ####### Install

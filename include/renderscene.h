@@ -6,7 +6,7 @@
 
 class RenderScene
 {
-public:
+  public:
     RenderScene();
     void paintGL() noexcept;
     void initGL() noexcept;
@@ -14,7 +14,7 @@ public:
     void setViewMatrix(glm::mat4 _view);
     void setProjMatrix(glm::mat4 _proj);
 
-private:
+  private:
     void initFBO();
     bool m_isFBODirty = true;
     GLuint m_fboId;
@@ -23,6 +23,8 @@ private:
     GLint m_width;
     GLint m_height;
     GLfloat m_ratio;
+    glm::mat4 m_view;
+    glm::mat4 m_proj;
 };
 
 #endif

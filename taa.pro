@@ -1,23 +1,24 @@
 include(taa.pri)
 
-TARGET = TAA
+TARGET =        TAA
 
-OBJECTS_DIR = obj
+OBJECTS_DIR =   obj
 
-MOC_DIR = moc
+MOC_DIR =       moc
 
-INCLUDEPATH +=./include
+INCLUDEPATH +=  ./include
 
-DESTDIR=./
+DESTDIR =       ./
 
-HEADERS += include/renderscene.h \
-           include/usercamera.h
+HEADERS +=      include/renderscene.h \
+                include/usercamera.h
 
-SOURCES += src/main.cpp \
-           src/usercamera.cpp \
-           src/renderscene.cpp
+SOURCES +=      src/main.cpp \
+                src/usercamera.cpp \
+                src/renderscene.cpp
 
-OTHER_FILES +=
+OTHER_FILES +=  shaders/colour_v.glsl \
+                shaders/colour_f.glsl
 
-DISTFILES += $OTHER_FILES
+DISTFILES +=    $OTHER_FILES
 
