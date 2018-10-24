@@ -26,7 +26,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
 {
-  static bool curstate = false;
+  static bool curstate = true;
   // Escape exits the application
   if (action == GLFW_PRESS)
   {
@@ -95,6 +95,7 @@ int main()
   glfwSetMouseButtonCallback(window, mouse_button_callback);
 
   r_scene.initGL();
+  std::cout<<"Controls:\n          -----forward---- W ----------------\n          -----left----- A   S ----right-----\n          -----backward--- D ----------------\n\n                         SPACE\n                toggle cursor window lock\n";
 
   // Set the window resize callback and call it once
   glfwSetFramebufferSizeCallback(window, resize_callback);

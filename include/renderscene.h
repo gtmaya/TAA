@@ -3,6 +3,8 @@
 
 #include <ngl/Obj.h>
 #include <glm/glm.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 class RenderScene
 {
@@ -25,6 +27,7 @@ class RenderScene
     GLfloat m_ratio;
     glm::mat4 m_view;
     glm::mat4 m_proj;
+    std::array<glm::vec3, 100> m_randPos;
 };
 
 #endif

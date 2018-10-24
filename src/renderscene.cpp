@@ -11,7 +11,20 @@
 RenderScene::RenderScene() : m_width(1),
                              m_height(1),
                              m_ratio(1.0f)
-{}
+{
+  std::srand(std::time(nullptr));
+  for (int i = 0; i < 100; i++)
+  {
+    m_randPos[i] = glm::vec3(std::rand()/float(RAND_MAX) * 20.f, std::rand()/float(RAND_MAX) * 20.f, std::rand()/float(RAND_MAX) * 20.f);
+    for (int j = 0; j < 3; j++)
+    {
+      if (std::rand()/float(RAND_MAX) > 0.5f)
+      {
+        m_randPos[i].operator[](j) *= -1;
+      }
+    }
+  }
+}
 
 void RenderScene::resizeGL(GLint _width, GLint _height) noexcept
 {
@@ -40,23 +53,33 @@ void RenderScene::paintGL() noexcept
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
   ngl::VAOPrimitives* prim = ngl::VAOPrimitives::instance();
-  prim->draw("teapot");
 
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("ColourProgram");
   GLuint pid = shader->getProgramID("ColourProgram");
 
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MV"),
-                     1,
-                     false,
-                     glm::value_ptr(m_view));
+  for (int i = 0; i < 100; i++)
+  {
+    //std::cout<<i<<'\n';
+    glm::mat4 M;
+    M = glm::translate(M, m_randPos[i]);
 
-  glm::mat4 MVP = m_proj * m_view;
+    glm::mat4 MV = m_view * M;
+    glm::mat4 MVP = m_proj * MV;
 
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"),
-                     1,
-                     false,
-                     glm::value_ptr(MVP));
+    glUniformMatrix4fv(glGetUniformLocation(pid, "MV"),
+                       1,
+                       false,
+                       glm::value_ptr(MV));
+
+
+    glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"),
+                       1,
+                       false,
+                       glm::value_ptr(MVP));
+
+    prim->draw("teapot");
+  }
 }
 
 void RenderScene::setViewMatrix(glm::mat4 _view)

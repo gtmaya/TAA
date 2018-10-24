@@ -4,6 +4,7 @@
 #include <ngl/Obj.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 class UserCamera
 {
@@ -20,7 +21,7 @@ class UserCamera
 
   private:
     glm::vec3 m_position;
-    glm::vec3 m_rotation;
+    glm::vec2 m_rotation;
     glm::vec3 m_velocity;
     glm::vec3 m_accelleration;
     glm::vec3 m_target;
@@ -32,6 +33,10 @@ class UserCamera
     float m_aspect;
     float m_zNear;
     float m_zFar;
+    std::array<bool, 4> m_keyIndex;
+    enum m_taaKeyIndex {taa_W, taa_A, taa_S, taa_D, taa_SPACE, taa_ESC};
+    glm::dvec2 m_mousePos;
+    bool m_camMoved = true;
 };
 
 #endif
