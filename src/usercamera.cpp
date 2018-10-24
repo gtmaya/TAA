@@ -1,7 +1,8 @@
 #include "usercamera.h"
+#include <glm/gtx/string_cast.hpp>
 
-UserCamera::UserCamera() : m_position (10.f, 0.f, 2.f),
-                           m_rotation (0.f, 0.f),
+UserCamera::UserCamera() : m_position (0.f, 0.f, 0.f),
+                           m_rotation (0.f, 0.2f),
                            m_velocity (0.f, 0.f, 0.f),
                            m_accelleration (0.f, 0.f, 0.f),
                            m_target (-1.f, 0.f, 0.f),
@@ -10,31 +11,23 @@ UserCamera::UserCamera() : m_position (10.f, 0.f, 2.f),
                            m_fovy(glm::pi<float>() * 0.25f),
                            m_aspect (float(m_width) / float(m_height)),
                            m_zNear (0.1f),
-                           m_zFar (100.f)
+                           m_zFar (100.f),
+                           m_mousePos (NULL, NULL)
 {
   update();
 }
 
 void UserCamera::handleMouseMove(const double _xpos, const double _ypos)
 {
-  std::cout<<"ROT = "<<m_rotation[0]<<','<<m_rotation[1]<<'\n';
-  //std::cout<<"Mouse pos = "<<_xpos<<" , "<<_ypos<<'\n';
-  glm::dvec2 newPos = {_xpos, _ypos};
+  glm::dvec2 newMousePos = glm::vec2(_xpos, _ypos);
+  if (m_mousePos.x == NULL && m_mousePos.y == NULL) {m_mousePos = newMousePos;}
+  glm::dvec2 deltaPos = m_mousePos - newMousePos;
+  std::cout<<"deltaPos = "<<glm::to_string(deltaPos)<<'\n';
 
-  static bool firstInit = true;
-  if (firstInit)
-  {
-    m_mousePos = newPos;
-    firstInit = false;
-  }
+  m_rotation += deltaPos * glm::dvec2(0.002);
 
-  glm::dvec2 deltaPos = m_mousePos - newPos;
-  //std::cout<<"DeltaPos = "<<deltaPos[0]<<", "<<deltaPos[1]<<'\n';
-  m_mousePos = newPos;
-
-  m_rotation += glm::dvec2(0.1f, 0.1f) * deltaPos;
-  m_camMoved = true;
-  std::cout<<"ROT = "<<m_rotation[0]<<','<<m_rotation[1]<<'\n';
+  std::cout<<"Rotation = "<<glm::to_string(m_rotation)<<'\n';
+  m_mousePos = newMousePos;
 }
 
 void UserCamera::handleMouseClick(const double _xpos, const double _ypos, const int _button, const int _action, const int _mods)
@@ -84,15 +77,31 @@ void UserCamera::resize(const int _width, const int _height)
 
 void UserCamera::update()
 {
+
+  //handleMouseMove(m_mousePos.x + 5.f, m_mousePos.y);
+
+
+  if (m_rotation.x > glm::pi<float>() * 2.f) {m_rotation.x = 0.f;}
+  if (m_rotation.x < 0.f) {m_rotation.x = glm::pi<float>() * 2.f;}
+
+  if (m_rotation.y < -glm::pi<float>() * 0.5f) {m_rotation.y = -glm::pi<float>() * 0.5f + 0.001f;}
+  if (m_rotation.y > glm::pi<float>() * 0.5f) {m_rotation.y = glm::pi<float>() * 0.5f - 0.001f;}
+
+//  m_rotation.y -= 0.01f;
+//  m_rotation.x += 0.01f;
+
+
   m_velocity += m_accelleration;
   m_position += m_velocity;
-  glm::vec3 target = glm::vec3(-1.f, 0.f, 0.f);
-  target = glm::rotateY(target, glm::radians(m_rotation[0]));
-  target = glm::rotateZ(target, glm::radians(-m_rotation[1]));
-  m_target = m_position + target;
-  //std::cout<<m_target[0]<<','<<m_target[1]<<','<<m_target[2]<<'\n';
+  m_target = glm::vec3(-1.f, 0.f, 0.f); //Default target is one unit in front of the camera at the origin.
+
+
+  m_target = glm::rotate(m_target, -m_rotation.y, glm::vec3(0.f, 0.f, 1.f));
+  m_target = glm::rotate(m_target, m_rotation.x, glm::vec3(0.f, 1.f, 0.f));
   m_view = glm::lookAt(m_position, glm::vec3(m_target), glm::vec3(0.0f,1.0f,0.0f));
   m_proj = glm::perspective(m_fovy, m_aspect, m_zNear, m_zFar);
+
+  //m_rotation = glm::vec2(0.f);
 }
 
 glm::mat4 UserCamera::viewMatrix() const
