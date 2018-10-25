@@ -13,9 +13,9 @@ RenderScene::RenderScene() : m_width(1),
                              m_ratio(1.0f)
 {
   std::srand(std::time(nullptr));
-  for (int i = 0; i < 100; i++)
+  for (int i = 0; i < 1000; i++)
   {
-    m_randPos[i] = glm::vec3(std::rand()/float(RAND_MAX) * 20.f, std::rand()/float(RAND_MAX) * 20.f, std::rand()/float(RAND_MAX) * 20.f);
+    m_randPos[i] = glm::vec3(std::rand()/float(RAND_MAX) * 200.f, std::rand()/float(RAND_MAX) * 200.f, std::rand()/float(RAND_MAX) * 200.f);
     for (int j = 0; j < 3; j++)
     {
       if (std::rand()/float(RAND_MAX) > 0.5f)
@@ -58,7 +58,7 @@ void RenderScene::paintGL() noexcept
   shader->use("ColourProgram");
   GLuint pid = shader->getProgramID("ColourProgram");
 
-  for (int i = 0; i < 100; i++)
+  for (int i = 0; i < 1000; i++)
   {
     //std::cout<<i<<'\n';
     glm::mat4 M;

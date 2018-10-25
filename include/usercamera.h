@@ -15,6 +15,7 @@ class UserCamera
     UserCamera();
     void handleMouseMove(const double _xpos, const double _ypos);
     void handleMouseClick(const double _xpos, const double _ypos, const int _button, const int _action, const int _mods);
+    void handleScroll(const double _xoffset, const double _yoffset);
     void handleKey(const int _key, const int _action);
     void resize(const int _width, const int _height);
     void update();

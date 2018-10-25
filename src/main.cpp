@@ -24,6 +24,11 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
   r_camera.handleMouseClick(xpos, ypos, button, action, mods);
 }
 
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+  r_camera.handleScroll(xoffset, yoffset);
+}
+
 void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
 {
   static bool curstate = true;
@@ -93,6 +98,7 @@ int main()
   // Set the mouse move and click callback
   glfwSetCursorPosCallback(window, cursor_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
+  glfwSetScrollCallback(window, scroll_callback);
 
   r_scene.initGL();
   std::cout<<"Controls:\n          -----forward---- W ----------------\n          -----left----- A   S ----right-----\n          -----backward--- D ----------------\n\n                         SPACE\n                toggle cursor window lock\n";

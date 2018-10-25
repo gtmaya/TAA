@@ -27,7 +27,7 @@ class RenderScene
     GLfloat m_ratio;
     glm::mat4 m_view;
     glm::mat4 m_proj;
-    std::array<glm::vec3, 100> m_randPos;
+    std::array<glm::vec3, 1000> m_randPos;
 };
 
 #endif

@@ -11,7 +11,7 @@ UserCamera::UserCamera() : m_position (0.f, 0.f, 0.f),
                            m_fovy(glm::pi<float>() * 0.25f),
                            m_aspect (float(m_width) / float(m_height)),
                            m_zNear (0.1f),
-                           m_zFar (100.f),
+                           m_zFar (1000.f),
                            m_mousePos (NULL, NULL)
 {
   update();
@@ -35,7 +35,15 @@ void UserCamera::handleMouseMove(const double _xpos, const double _ypos)
 
 void UserCamera::handleMouseClick(const double _xpos, const double _ypos, const int _button, const int _action, const int _mods)
 {
-  //std::cout<<"Mouse pos = "<<_xpos<<", "<<_ypos<<"; button = "<<_button<<" action = "<<_action<<" mods = "<<_mods<<'\n';
+  std::cout<<"Mouse pos = "<<_xpos<<", "<<_ypos<<"; button = "<<_button<<" action = "<<_action<<" mods = "<<_mods<<'\n';
+}
+
+void UserCamera::handleScroll(const double _xoffset, const double _yoffset)
+{
+  std::cout<<_xoffset<<','<<_yoffset<<'\n';
+  m_fovy -= 0.05f * float(_yoffset);
+  if (m_fovy > glm::pi<float>() * 0.5f) {m_fovy = glm::pi<float>() * 0.5f;}
+  if (m_fovy < glm::pi<float>() * 0.01f) {m_fovy = glm::pi<float>() * 0.01f;}
 }
 
 void UserCamera::handleKey(const int _key, const int _action)
