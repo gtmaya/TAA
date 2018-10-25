@@ -2,9 +2,9 @@
 #include <glm/gtx/string_cast.hpp>
 
 UserCamera::UserCamera() : m_position (0.f, 0.f, 0.f),
-                           m_rotation (0.f, 0.2f),
+                           m_rotation (0.f, 0.f),
                            m_velocity (0.f, 0.f, 0.f),
-                           m_accelleration (0.f, 0.f, 0.f),
+                           m_acceleration (0.f, 0.f, 0.f),
                            m_target (-1.f, 0.f, 0.f),
                            m_width (1),
                            m_height (1),
@@ -21,12 +21,15 @@ void UserCamera::handleMouseMove(const double _xpos, const double _ypos)
 {
   glm::dvec2 newMousePos = glm::vec2(_xpos, _ypos);
   if (m_mousePos.x == NULL && m_mousePos.y == NULL) {m_mousePos = newMousePos;}
-  glm::dvec2 deltaPos = m_mousePos - newMousePos;
-  std::cout<<"deltaPos = "<<glm::to_string(deltaPos)<<'\n';
 
+  glm::dvec2 deltaPos = m_mousePos - newMousePos;
   m_rotation += deltaPos * glm::dvec2(0.002);
 
-  std::cout<<"Rotation = "<<glm::to_string(m_rotation)<<'\n';
+  if (m_rotation.x > glm::pi<float>() * 2.f) {m_rotation.x = 0.f;}
+  if (m_rotation.x < 0.f) {m_rotation.x = glm::pi<float>() * 2.f;}
+  if (m_rotation.y < -glm::pi<float>() * 0.5f) {m_rotation.y = -glm::pi<float>() * 0.5f + 0.001f;}
+  if (m_rotation.y > glm::pi<float>() * 0.5f) {m_rotation.y = glm::pi<float>() * 0.5f - 0.001f;}
+
   m_mousePos = newMousePos;
 }
 
@@ -35,37 +38,36 @@ void UserCamera::handleMouseClick(const double _xpos, const double _ypos, const 
   //std::cout<<"Mouse pos = "<<_xpos<<", "<<_ypos<<"; button = "<<_button<<" action = "<<_action<<" mods = "<<_mods<<'\n';
 }
 
-void UserCamera::handleKey(const int _key, const bool _state)
+void UserCamera::handleKey(const int _key, const int _action)
 {
-  static bool wActuallyDown = false;
-  if (m_keyIndex[taa_W])
+  bool state = false;
+  switch (_action)
   {
-    //If state changed last frame, W was either pressed or released from a long state of hold
-    wActuallyDown = !wActuallyDown;
-  }
-
-  switch (_key)
-  {
-    case 'W':
+    case (GLFW_PRESS):
     {
-      m_keyIndex[taa_W] = _state;
-      std::cout<<m_keyIndex[taa_W]<<'\n';  /*Noticed that if W is held, this returns true only for the initial press and then for the release.
-                                             if W is pressed and released quickly however it returns true only for the intial update.*/
-      if (wActuallyDown){std::cout<<"ACUTALLY DOWN\n";} /*This works if W is held, reporting the key is down and ignoring the key repeats, however does not work with single presses
-                                                          as a press essentially causes wActuallyDown to flip flop*/
+      state = true;
       break;
     }
-    case 'A':
-      m_keyIndex[taa_A]= _state;
+    case (GLFW_REPEAT):
+    {
+      state = true;
       break;
-    case 'S':
-      m_keyIndex[taa_S] = _state;
-      break;
-    case 'D':
-      m_keyIndex[taa_D] = _state;
-      break;
+    }
     default:
+    {
+      state = false;
       break;
+    }
+  }
+  switch (_key)
+  {
+    case (GLFW_KEY_W) : {m_keyIndex[taa_W] = state; break;}
+    case (GLFW_KEY_A) : {m_keyIndex[taa_A] = state; break;}
+    case (GLFW_KEY_S) : {m_keyIndex[taa_S] = state; break;}
+    case (GLFW_KEY_D) : {m_keyIndex[taa_D] = state; break;}
+    case (GLFW_KEY_Q) : {m_keyIndex[taa_Q] = state; break;}
+    case (GLFW_KEY_E) : {m_keyIndex[taa_E] = state; break;}
+    default           : {break;}
   }
 }
 
@@ -77,27 +79,36 @@ void UserCamera::resize(const int _width, const int _height)
 
 void UserCamera::update()
 {
+//  std::cout<<m_keyIndex[taa_W]<<'\n';
 
-  //handleMouseMove(m_mousePos.x + 5.f, m_mousePos.y);
+  glm::vec3 deltaV(0.f, 0.f, 0.f);
+
+  if (m_keyIndex[taa_W]) {m_acceleration.x = -0.015f;}
+  if (m_keyIndex[taa_S]) {m_acceleration.x =  0.015f;}
+  if (m_keyIndex[taa_A]) {m_acceleration.z =  0.015f;}
+  if (m_keyIndex[taa_D]) {m_acceleration.z = -0.015f;}
+  if (m_keyIndex[taa_Q]) {m_acceleration.y = -0.015f;}
+  if (m_keyIndex[taa_E]) {m_acceleration.y =  0.015f;}
+
+  if (!m_keyIndex[taa_W] && !m_keyIndex[taa_S]) {m_acceleration.x = 0.f;}
+  if (!m_keyIndex[taa_A] && !m_keyIndex[taa_D]) {m_acceleration.z = 0.f;}
+  if (!m_keyIndex[taa_Q] && !m_keyIndex[taa_E]) {m_acceleration.y = 0.f;}
+
+  m_acceleration = glm::rotate(m_acceleration, -m_rotation.y, glm::vec3(0.f, 0.f, 1.f));
+  m_acceleration = glm::rotate(m_acceleration, m_rotation.x, glm::vec3(0.f, 1.f, 0.f));
 
 
-  if (m_rotation.x > glm::pi<float>() * 2.f) {m_rotation.x = 0.f;}
-  if (m_rotation.x < 0.f) {m_rotation.x = glm::pi<float>() * 2.f;}
+  m_velocity += m_acceleration;
+  m_velocity += deltaV;
+  m_velocity *= 0.95f;
 
-  if (m_rotation.y < -glm::pi<float>() * 0.5f) {m_rotation.y = -glm::pi<float>() * 0.5f + 0.001f;}
-  if (m_rotation.y > glm::pi<float>() * 0.5f) {m_rotation.y = glm::pi<float>() * 0.5f - 0.001f;}
-
-//  m_rotation.y -= 0.01f;
-//  m_rotation.x += 0.01f;
-
-
-  m_velocity += m_accelleration;
   m_position += m_velocity;
   m_target = glm::vec3(-1.f, 0.f, 0.f); //Default target is one unit in front of the camera at the origin.
 
 
   m_target = glm::rotate(m_target, -m_rotation.y, glm::vec3(0.f, 0.f, 1.f));
   m_target = glm::rotate(m_target, m_rotation.x, glm::vec3(0.f, 1.f, 0.f));
+  m_target += m_position;
   m_view = glm::lookAt(m_position, glm::vec3(m_target), glm::vec3(0.0f,1.0f,0.0f));
   m_proj = glm::perspective(m_fovy, m_aspect, m_zNear, m_zFar);
 

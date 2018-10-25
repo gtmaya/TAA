@@ -48,7 +48,7 @@ void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int
       }
     }
   }
-  r_camera.handleKey(key, (action == GLFW_PRESS));
+  r_camera.handleKey(key, action);
 }
 
 void resize_callback(GLFWwindow */*window*/, int width, int height)
