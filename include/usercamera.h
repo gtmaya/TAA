@@ -13,6 +13,7 @@ class UserCamera
 {
   public:
     UserCamera();
+    ~UserCamera();
     void handleMouseMove(const double _xpos, const double _ypos);
     void handleMouseClick(const double _xpos, const double _ypos, const int _button, const int _action, const int _mods);
     void handleScroll(const double _xoffset, const double _yoffset);
@@ -21,6 +22,9 @@ class UserCamera
     void update();
     glm::mat4 viewMatrix() const;
     glm::mat4 projMatrix() const;
+    glm::mat4 cubeMatrix() const;
+    void toggleCursorState();
+    bool cursorActive() const;
 
 
   private:
@@ -33,6 +37,7 @@ class UserCamera
     int m_height;
     glm::mat4 m_view;
     glm::mat4 m_proj;
+    glm::mat4 m_cube;
     float m_fovy;
     float m_aspect;
     float m_zNear;
@@ -41,6 +46,7 @@ class UserCamera
     enum m_taaKeyIndex {taa_W, taa_A, taa_S, taa_D, taa_Q, taa_E, taa_SPACE, taa_ESC};
     glm::dvec2 m_mousePos;
     bool m_camMoved = true;
+    bool m_trackingActive = true;
 };
 
 #endif

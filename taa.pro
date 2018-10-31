@@ -11,14 +11,20 @@ INCLUDEPATH +=  ./include
 DESTDIR =       ./
 
 HEADERS +=      include/renderscene.h \
-                include/usercamera.h
+                include/usercamera.h \
+                include/objhandler.h \
+                include/shaderhandler.h
 
 SOURCES +=      src/main.cpp \
                 src/usercamera.cpp \
-                src/renderscene.cpp
+                src/renderscene.cpp \
+                src/objhandler.cpp \
+                src/shaderhandler.cpp
 
 OTHER_FILES +=  shaders/colour_v.glsl \
-                shaders/colour_f.glsl
+                shaders/colour_f.glsl \
+                shaders/env_vert.glsl \
+                shaders/env_frag.glsl \
 
 DISTFILES +=    $OTHER_FILES
 

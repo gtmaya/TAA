@@ -1,7 +1,7 @@
 #include "usercamera.h"
 #include <glm/gtx/string_cast.hpp>
 
-UserCamera::UserCamera() : m_position (0.f, 0.f, 0.f),
+UserCamera::UserCamera() : m_position (10.f, 0.f, 0.f),
                            m_rotation (0.f, 0.f),
                            m_velocity (0.f, 0.f, 0.f),
                            m_acceleration (0.f, 0.f, 0.f),
@@ -16,6 +16,8 @@ UserCamera::UserCamera() : m_position (0.f, 0.f, 0.f),
 {
   update();
 }
+
+UserCamera::~UserCamera() = default;
 
 void UserCamera::handleMouseMove(const double _xpos, const double _ypos)
 {
@@ -83,6 +85,7 @@ void UserCamera::resize(const int _width, const int _height)
 {
   m_width = _width;
   m_height = _height;
+  m_aspect = float(_width) / float(_height);
 }
 
 void UserCamera::update()
@@ -119,7 +122,7 @@ void UserCamera::update()
   m_target += m_position;
   m_view = glm::lookAt(m_position, glm::vec3(m_target), glm::vec3(0.0f,1.0f,0.0f));
   m_proj = glm::perspective(m_fovy, m_aspect, m_zNear, m_zFar);
-
+  m_cube = glm::lookAt({0.f, 0.f, 0.f}, m_target - m_position, {0.f, 1.f, 0.f});
   //m_rotation = glm::vec2(0.f);
 }
 
@@ -133,3 +136,17 @@ glm::mat4 UserCamera::projMatrix() const
   return m_proj;
 }
 
+glm::mat4 UserCamera::cubeMatrix() const
+{
+  return m_cube;
+}
+
+void UserCamera::toggleCursorState()
+{
+  m_trackingActive = !m_trackingActive;
+}
+
+bool UserCamera::cursorActive() const
+{
+  return m_trackingActive;
+}

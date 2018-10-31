@@ -14,7 +14,7 @@ void error_callback(int error, const char* description)
 
 void cursor_callback(GLFWwindow* /*window*/, double xpos, double ypos)
 {
-  r_camera.handleMouseMove(xpos, ypos);
+  if (r_camera.cursorActive()) {r_camera.handleMouseMove(xpos, ypos);}
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -41,6 +41,7 @@ void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int
         glfwSetWindowShouldClose(window, true); break;
       case (GLFW_KEY_SPACE):
       {
+        r_camera.toggleCursorState();
         curstate = !curstate;
         if (curstate)
         {
@@ -115,6 +116,7 @@ int main()
     r_camera.update();
     r_scene.setViewMatrix(r_camera.viewMatrix());
     r_scene.setProjMatrix(r_camera.projMatrix());
+    r_scene.setCubeMatrix(r_camera.cubeMatrix());
 
     r_scene.paintGL();
 
