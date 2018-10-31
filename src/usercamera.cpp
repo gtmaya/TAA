@@ -17,6 +17,21 @@ UserCamera::UserCamera() : m_position (10.f, 0.f, 0.f),
   update();
 }
 
+void UserCamera::reset()
+{
+  m_position = {10.f, 0.f, 0.f};
+  m_rotation = {0.f, 0.f};
+  m_velocity = {0.f, 0.f, 0.f};
+  m_acceleration = {0.f, 0.f, 0.f};
+  m_target = {-1.f, 0.f, 0.f};
+  m_fovy = glm::pi<float>() * 0.25f;
+  m_aspect = float(m_width) / float(m_height);
+  m_zNear = 0.1f;
+  m_zFar = 1000.f;
+  m_mousePos = {NULL, NULL};
+  update();
+}
+
 UserCamera::~UserCamera() = default;
 
 void UserCamera::handleMouseMove(const double _xpos, const double _ypos)

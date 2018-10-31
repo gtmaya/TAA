@@ -25,6 +25,7 @@ class UserCamera
     glm::mat4 cubeMatrix() const;
     void toggleCursorState();
     bool cursorActive() const;
+    void reset();
 
 
   private:

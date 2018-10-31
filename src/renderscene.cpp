@@ -71,13 +71,31 @@ void RenderScene::initGL() noexcept
                      "shaders/colour_v.glsl",
                      "shaders/colour_f.glsl");
 
+  shader->loadShader("PostProcessing",
+                     "shaders/post_v.glsl",
+                     "shaders/post_f.glsl");
+
   initEnvironment();
+
+  ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
+  prim->createTrianglePlane("plane",2,2,1,1,ngl::Vec3(0,1,0));
 }
 
 void RenderScene::paintGL() noexcept
 {
+  if (m_isFBODirty)
+  {
+    initFBO();
+    m_isFBODirty = false;
+  }
+
+//  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//  glViewport(0,0,m_width,m_height);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
+
   ngl::VAOPrimitives* prim = ngl::VAOPrimitives::instance();
 
 
@@ -131,6 +149,33 @@ void RenderScene::paintGL() noexcept
   {
     obj.m_mesh->draw();
   }
+
+
+  // Unbind our FBO
+  glBindFramebuffer(GL_FRAMEBUFFER,0);
+
+  // Find the depth of field shader
+  glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glViewport(0,0,m_width,m_height);
+
+  // Now bind our rendered image which should be in the frame buffer for the next render pass
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, m_fboTextureID);
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, m_fboDepthID);
+
+  shader->use("PostProcessing");
+  pid = shader->getProgramID("PostProcessing");
+
+  glUniform1i(glGetUniformLocation(pid, "fboTex"), 1);
+  glUniform1i(glGetUniformLocation(pid, "fboDepthTex"), 2);
+  glUniform2f(glGetUniformLocation(pid, "windowSize"), m_width, m_height);
+
+  MVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
+  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"), 1, false, glm::value_ptr(MVP));
+
+  prim->draw("plane");
+  glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void RenderScene::setViewMatrix(glm::mat4 _view)
@@ -193,4 +238,44 @@ void RenderScene::initEnvironmentSide(GLenum target, const char *filename)
       GL_UNSIGNED_BYTE, // Data type of pixel data
       img.getPixels()   // Pointer to image data in memory
     );
+}
+
+
+void RenderScene::initFBO()
+{
+   glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
+   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == (GL_FRAMEBUFFER_COMPLETE))
+   {
+     glDeleteTextures(1, &m_fboTextureID);
+     glDeleteTextures(1, &m_fboDepthTextureID);
+     glDeleteFramebuffers(1, &m_fboID);
+   }
+
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+   glGenTextures(1, &m_fboTextureID);
+   glActiveTexture(GL_TEXTURE4);
+   glBindTexture(GL_TEXTURE_2D, m_fboTextureID);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+   glGenTextures(1, &m_fboDepthTextureID);
+   glActiveTexture(GL_TEXTURE6);
+   glBindTexture(GL_TEXTURE_2D, m_fboDepthTextureID);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  glGenFramebuffers(1, &m_fboID);
+  glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fboTextureID, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_fboDepthTextureID, 0);
+
+  GLenum drawBufs[] = {GL_COLOR_ATTACHMENT0};
+  glDrawBuffers(1, drawBufs);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {std::cout<<"Help\n";}
 }

@@ -25,6 +25,8 @@ OTHER_FILES +=  shaders/colour_v.glsl \
                 shaders/colour_f.glsl \
                 shaders/env_vert.glsl \
                 shaders/env_frag.glsl \
+                shaders/post_v.glsl \
+                shaders/post_f.glsl
 
 DISTFILES +=    $OTHER_FILES
 

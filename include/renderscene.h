@@ -26,9 +26,10 @@ class RenderScene
   private:
     void initFBO();
     bool m_isFBODirty = true;
-    GLuint m_fboId;
-    GLuint m_fboTextureId;
-    GLuint m_fboDepthId;
+    GLuint m_fboID;
+    GLuint m_fboTextureID;
+    GLuint m_fboDepthID;
+    GLuint m_fboDepthTextureID;
     GLuint m_envTex;
     GLint m_width;
     GLint m_height;
