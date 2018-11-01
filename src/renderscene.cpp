@@ -11,20 +11,7 @@
 RenderScene::RenderScene() : m_width(1),
                              m_height(1),
                              m_ratio(1.0f)
-{
-//  std::srand(std::time(nullptr));
-//  for (int i = 0; i < 1000; i++)
-//  {
-//    m_randPos[i] = glm::vec3(std::rand()/float(RAND_MAX) * 200.f, std::rand()/float(RAND_MAX) * 200.f, std::rand()/float(RAND_MAX) * 200.f);
-//    for (int j = 0; j < 3; j++)
-//    {
-//      if (std::rand()/float(RAND_MAX) > 0.5f)
-//      {
-//        m_randPos[i].operator[](j) *= -1;
-//      }
-//    }
-//  }
-}
+{}
 
 RenderScene::~RenderScene() = default;
 
@@ -51,13 +38,9 @@ void RenderScene::initGL() noexcept
   m_arrObj[4].m_mesh = new ngl::Obj("models/translucentPlastic.obj");
   m_arrObj[5].m_mesh = new ngl::Obj("models/faceplate.obj");
 
-  std::cout<<"Hello?\n";
   for (auto &i : m_arrObj)
   {
-    static int e = 0;
-    std::cout<<e<<'\n';
     i.m_mesh->createVAO();
-    e++;
   }
 
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
@@ -83,31 +66,55 @@ void RenderScene::initGL() noexcept
 
 void RenderScene::paintGL() noexcept
 {
+  static bool isFirst = true;
   if (m_isFBODirty)
   {
     initFBO();
     m_isFBODirty = false;
   }
 
-//  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//  glViewport(0,0,m_width,m_height);
-
-  glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glViewport(0,0,m_width,m_height);
-
   ngl::VAOPrimitives* prim = ngl::VAOPrimitives::instance();
-
-
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  shader->use("EnvironmentProgram");
-  GLuint pid = shader->getProgramID("EnvironmentProgram");
-
-  glUseProgram(pid);
+  GLuint pid;
 
   glm::mat4 M, MV, MVP;
   glm::mat3 N;
 
+  //RENDER PREVIOUS FRAME TO SCREEN--------------------------------------------------
+  if (!isFirst)
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER,0);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0,0,m_width,m_height);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_fboTextureID);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_fboDepthID);
+
+    shader->use("PostProcessing");
+    pid = shader->getProgramID("PostProcessing");
+
+    glUniform1i(glGetUniformLocation(pid, "fboTex"), 1);
+    glUniform1i(glGetUniformLocation(pid, "fboDepthTex"), 2);
+    glUniform2f(glGetUniformLocation(pid, "windowSize"), m_width, m_height);
+
+    MVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
+    glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"), 1, false, glm::value_ptr(MVP));
+
+    prim->draw("plane");
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+
+  //RENDER TO FBO--------------------------------------------------------------------
+  glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glViewport(0,0,m_width,m_height);
+
+  //RENDER CUBEMAP-------------------------------------------------------------------
+  pid = shader->getProgramID("EnvironmentProgram");
+  shader->use("EnvironmentProgram");
+
+  M = glm::mat4(1.f);
   M = glm::scale(M, glm::vec3(200.f, 200.f, 200.f));
   MV = m_cube * M;
   MVP = m_proj * MV;
@@ -121,13 +128,11 @@ void RenderScene::paintGL() noexcept
                      1,
                      false,
                      glm::value_ptr(MV));
-
   prim->draw("cube");
 
-
+  //RENDER OBJECTS-------------------------------------------------------------------
   pid = shader->getProgramID("ColourProgram");
   shader->use("ColourProgram");
-
 
   M = glm::mat4(1.f);
   MV = m_view * M;
@@ -143,39 +148,13 @@ void RenderScene::paintGL() noexcept
                      1,
                      false,
                      glm::value_ptr(MVP));
-
-
   for (auto &obj : m_arrObj)
   {
     obj.m_mesh->draw();
   }
 
-
-  // Unbind our FBO
-  glBindFramebuffer(GL_FRAMEBUFFER,0);
-
-  // Find the depth of field shader
-  glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glViewport(0,0,m_width,m_height);
-
-  // Now bind our rendered image which should be in the frame buffer for the next render pass
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, m_fboTextureID);
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, m_fboDepthID);
-
-  shader->use("PostProcessing");
-  pid = shader->getProgramID("PostProcessing");
-
-  glUniform1i(glGetUniformLocation(pid, "fboTex"), 1);
-  glUniform1i(glGetUniformLocation(pid, "fboDepthTex"), 2);
-  glUniform2f(glGetUniformLocation(pid, "windowSize"), m_width, m_height);
-
-  MVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"), 1, false, glm::value_ptr(MVP));
-
-  prim->draw("plane");
-  glBindTexture(GL_TEXTURE_2D, 0);
+  //THIS IS NOT THE FIRST FRAME------------------------------------------------------
+  isFirst = false;
 }
 
 void RenderScene::setViewMatrix(glm::mat4 _view)
