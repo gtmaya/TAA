@@ -24,12 +24,17 @@ class RenderScene
     void initEnvironmentSide(GLenum _target, const char *_filename);
 
   private:
-    void initFBO();
+    void initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB);
     bool m_isFBODirty = true;
-    GLuint m_fboID;
-    GLuint m_fboTextureID;
-    GLuint m_fboDepthID;
-    GLuint m_fboDepthTextureID;
+
+    std::array<std::array<GLuint, 4>, 2> m_arrFBO;
+
+    enum m_taaFBOContainer {taa_fboA = 0, taa_fboB};
+    enum m_taaFBOIndex {taa_fboID = 0, taa_fboTextureID, taa_fboDepthID, taa_fboDepthTextureID};
+
+    size_t m_currentFBO = 0;
+    size_t m_previousFBO = 1;
+
     GLuint m_envTex;
     GLint m_width;
     GLint m_height;

@@ -51,6 +51,7 @@ void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int
         {
           glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
+        break;
       }
       case (GLFW_KEY_ENTER):
       {

@@ -66,10 +66,52 @@ void RenderScene::initGL() noexcept
 
 void RenderScene::paintGL() noexcept
 {
-  static bool isFirst = true;
+  if (m_currentFBO == taa_fboA)
+  {
+    m_currentFBO = taa_fboB;
+    m_previousFBO = taa_fboA;
+  }
+  else
+  {
+    m_currentFBO = taa_fboA;
+    m_previousFBO = taa_fboB;
+  }
+
+  GLenum textureA;
+  GLenum textureB;
+  int texUnitA;
+  int texUnitB;
+  int texUnitC;
+  int texUnitD;
+
+  switch (m_currentFBO)
+  {
+    case (taa_fboA):
+    {
+      textureA = GL_TEXTURE1;
+      textureB = GL_TEXTURE2;
+      texUnitA = 1;
+      texUnitB = 2;
+      texUnitC = 3;
+      texUnitD = 4;
+      break;
+    }
+    default:
+    {
+      textureA = GL_TEXTURE3;
+      textureB = GL_TEXTURE4;
+      texUnitA = 3;
+      texUnitB = 4;
+      texUnitC = 1;
+      texUnitD = 2;
+      break;
+    }
+  }
+
   if (m_isFBODirty)
   {
-    initFBO();
+    initFBO(taa_fboA, textureA, textureB);
+    initFBO(taa_fboB, textureA, textureB);
     m_isFBODirty = false;
   }
 
@@ -80,33 +122,8 @@ void RenderScene::paintGL() noexcept
   glm::mat4 M, MV, MVP;
   glm::mat3 N;
 
-  //RENDER PREVIOUS FRAME TO SCREEN--------------------------------------------------
-  if (!isFirst)
-  {
-    glBindFramebuffer(GL_FRAMEBUFFER,0);
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glViewport(0,0,m_width,m_height);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_fboTextureID);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_fboDepthID);
-
-    shader->use("PostProcessing");
-    pid = shader->getProgramID("PostProcessing");
-
-    glUniform1i(glGetUniformLocation(pid, "fboTex"), 1);
-    glUniform1i(glGetUniformLocation(pid, "fboDepthTex"), 2);
-    glUniform2f(glGetUniformLocation(pid, "windowSize"), m_width, m_height);
-
-    MVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
-    glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"), 1, false, glm::value_ptr(MVP));
-
-    prim->draw("plane");
-    glBindTexture(GL_TEXTURE_2D, 0);
-  }
-
   //RENDER TO FBO--------------------------------------------------------------------
-  glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
+  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_currentFBO][taa_fboID]);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
 
@@ -137,6 +154,7 @@ void RenderScene::paintGL() noexcept
   M = glm::mat4(1.f);
   MV = m_view * M;
   MVP = m_proj * MV;
+  N = glm::inverse(glm::mat3(MV));
 
   glUniformMatrix4fv(glGetUniformLocation(pid, "MV"),
                      1,
@@ -148,13 +166,37 @@ void RenderScene::paintGL() noexcept
                      1,
                      false,
                      glm::value_ptr(MVP));
+  glUniformMatrix4fv(glGetUniformLocation(pid, "N"),
+                     1,
+                     true,
+                     glm::value_ptr(N));
   for (auto &obj : m_arrObj)
   {
     obj.m_mesh->draw();
   }
 
-  //THIS IS NOT THE FIRST FRAME------------------------------------------------------
-  isFirst = false;
+  glBindFramebuffer(GL_FRAMEBUFFER,0);
+  glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glViewport(0,0,m_width,m_height);
+  glActiveTexture(textureA);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_currentFBO][taa_fboTextureID]);
+  glActiveTexture(textureB);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_currentFBO][taa_fboDepthID]);
+
+  shader->use("PostProcessing");
+  pid = shader->getProgramID("PostProcessing");
+
+  glUniform1i(glGetUniformLocation(pid, "fboTex"), texUnitA);
+  glUniform1i(glGetUniformLocation(pid, "fboDepthTex"), texUnitB);
+  glUniform1i(glGetUniformLocation(pid, "pastfboTex"), texUnitC);
+  glUniform1i(glGetUniformLocation(pid, "pastfboDepthTex"), texUnitD);
+  glUniform2f(glGetUniformLocation(pid, "windowSize"), m_width, m_height);
+
+  MVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
+  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"), 1, false, glm::value_ptr(MVP));
+
+  prim->draw("plane");
+  glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void RenderScene::setViewMatrix(glm::mat4 _view)
@@ -174,33 +216,33 @@ void RenderScene::setCubeMatrix(glm::mat4 _cube)
 
 void RenderScene::initEnvironment()
 {
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+  glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-    glActiveTexture(GL_TEXTURE0);
-    glGenTextures(1, &m_envTex);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_envTex);
+  glActiveTexture(GL_TEXTURE0);
+  glGenTextures(1, &m_envTex);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, m_envTex);
 
-    initEnvironmentSide(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, "images/nz.png");
-    initEnvironmentSide(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, "images/pz.png");
-    initEnvironmentSide(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, "images/ny.png");
-    initEnvironmentSide(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, "images/py.png");
-    initEnvironmentSide(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, "images/nx.png");
-    initEnvironmentSide(GL_TEXTURE_CUBE_MAP_POSITIVE_X, "images/px.png");
+  initEnvironmentSide(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, "images/nz.png");
+  initEnvironmentSide(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, "images/pz.png");
+  initEnvironmentSide(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, "images/ny.png");
+  initEnvironmentSide(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, "images/py.png");
+  initEnvironmentSide(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, "images/nx.png");
+  initEnvironmentSide(GL_TEXTURE_CUBE_MAP_POSITIVE_X, "images/px.png");
 
-    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+  glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_AUTO_GENERATE_MIPMAP, GL_TRUE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    //GLfloat anisotropy;
-    //glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &anisotropy);
-    //glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_AUTO_GENERATE_MIPMAP, GL_TRUE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  //GLfloat anisotropy;
+  //glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &anisotropy);
+  //glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
 
-    ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-    shader->use("EnvironmentProgram");
-    shader->setUniform("envMap", 0);
+  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
+  shader->use("EnvironmentProgram");
+  shader->setUniform("envMap", 0);
 }
 
 void RenderScene::initEnvironmentSide(GLenum target, const char *filename)
@@ -220,36 +262,37 @@ void RenderScene::initEnvironmentSide(GLenum target, const char *filename)
 }
 
 
-void RenderScene::initFBO()
+void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
 {
-   glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
-   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == (GL_FRAMEBUFFER_COMPLETE))
-   {
-     glDeleteTextures(1, &m_fboTextureID);
-     glDeleteTextures(1, &m_fboDepthTextureID);
-     glDeleteFramebuffers(1, &m_fboID);
-   }
+  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_fboID][taa_fboID]);
 
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == (GL_FRAMEBUFFER_COMPLETE))
+  {
+   glDeleteTextures(1, &m_arrFBO[_fboID][taa_fboTextureID]);
+   glDeleteTextures(1, &m_arrFBO[_fboID][taa_fboDepthTextureID]);
+   glDeleteFramebuffers(1, &m_arrFBO[_fboID][taa_fboID]);
+  }
 
-   glGenTextures(1, &m_fboTextureID);
-   glActiveTexture(GL_TEXTURE4);
-   glBindTexture(GL_TEXTURE_2D, m_fboTextureID);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-   glGenTextures(1, &m_fboDepthTextureID);
-   glActiveTexture(GL_TEXTURE6);
-   glBindTexture(GL_TEXTURE_2D, m_fboDepthTextureID);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glGenTextures(1, &m_arrFBO[_fboID][taa_fboTextureID]);
+  glActiveTexture(_textureA);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboTextureID]);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  glGenFramebuffers(1, &m_fboID);
-  glBindFramebuffer(GL_FRAMEBUFFER, m_fboID);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fboTextureID, 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_fboDepthTextureID, 0);
+  glGenTextures(1, &m_arrFBO[_fboID][taa_fboDepthTextureID]);
+  glActiveTexture(_textureB);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboDepthTextureID]);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  glGenFramebuffers(1, &m_arrFBO[_fboID][taa_fboID]);
+  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_fboID][taa_fboID]);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboTextureID], 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboDepthTextureID], 0);
 
   GLenum drawBufs[] = {GL_COLOR_ATTACHMENT0};
   glDrawBuffers(1, drawBufs);
