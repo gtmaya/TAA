@@ -111,6 +111,7 @@ int main()
              "               forward   W\n"
              "            left/right A   S\n"
              "              backward   D \n"
+             "               down/up Q   E\n"
              "\n"
              "                  SPACE\n"
              "         toggle cursor window lock\n"
