@@ -162,7 +162,7 @@ void RenderScene::blit(size_t _fbo, GLenum _texture, int _textureUnit)
                      glm::value_ptr(screenMVP));
 
   prim->draw("plane");
-  glBindTexture(GL_TEXTURE_2D, 0);
+  //glBindTexture(GL_TEXTURE_2D, 0); //not sure why this is here
 }
 
 void RenderScene::renderCubemap()

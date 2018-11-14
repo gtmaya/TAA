@@ -24,9 +24,9 @@ void main()
 
   vec4 test = viewProjectionPREVIOUS * worldSpacePosition;
   vec2 uvPREVIOUS = 0.5 * ( test.xy / test.w ) + 0.5;
-  vec4 colourHISTORY = texture(colourANTIALIASED, uvPREVIOUS);
+  vec4 colourHISTORY = texture(colourANTIALIASED, uvCURRENT);
 
   FragColour = 0.5 * colourCURRENT + 0.5 * colourHISTORY;
-//  FragColour = colourHISTORY;
+  FragColour = colourHISTORY;
 }
 
