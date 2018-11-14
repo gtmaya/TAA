@@ -106,7 +106,7 @@ void UserCamera::resize(const int _width, const int _height)
 void UserCamera::update()
 {
 //  std::cout<<m_keyIndex[taa_W]<<'\n';
-  //m_position.z -= 0.05f;
+  m_position.z -= 0.05f;
   glm::vec3 deltaV(0.f, 0.f, 0.f);
 
   if (m_keyIndex[taa_W]) {m_acceleration.x = -0.015f;}

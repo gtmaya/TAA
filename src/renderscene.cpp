@@ -1,6 +1,5 @@
 #include "renderscene.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <ngl/Obj.h>
@@ -40,18 +39,18 @@ void RenderScene::initGL() noexcept
 
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 
-  shader->loadShader("EnvironmentProgram",
+  shader->loadShader("environmentShader",
                      "shaders/env_v.glsl",
                      "shaders/env_f.glsl");
 
 
-  shader->loadShader("ColourProgram",
-                     "shaders/colour_v.glsl",
-                     "shaders/colour_f.glsl");
+  shader->loadShader("phongShader",
+                     "shaders/phong_v.glsl",
+                     "shaders/phong_f.glsl");
 
-  shader->loadShader("PostProcessing",
-                     "shaders/post_v.glsl",
-                     "shaders/post_f.glsl");
+  shader->loadShader("aaShader",
+                     "shaders/aa_v.glsl",
+                     "shaders/aa_f.glsl");
 
   shader->loadShader("blitShader",
                      "shaders/blit_v.glsl",
@@ -65,98 +64,105 @@ void RenderScene::initGL() noexcept
 
 void RenderScene::paintGL() noexcept
 {
+  //Common stuff
   if (m_isFBODirty)
   {
-    initFBO(taa_fboA, m_renderFBOColour, m_renderFBODepth);
-    initFBO(taa_fboB, m_aaFBOColour, m_aaFBODepth);
+    initFBO(m_renderFBO, m_renderFBOColour, m_renderFBODepth);
+    initFBO(m_aaFBO, m_aaFBOColour, m_aaFBODepth);
     m_isFBODirty = false;
   }
 
-  ngl::VAOPrimitives* prim = ngl::VAOPrimitives::instance();
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  GLuint pid;
-
-
-  //RENDER TO FBO--------------------------------------------------------------------
-  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glViewport(0,0,m_width,m_height);
-
-  //RENDER CUBEMAP-------------------------------------------------------------------
-  //renderCubemap();
-
-  //RENDER OBJECTS-------------------------------------------------------------------
-  static size_t count;
+  //Jitter VP matrix (not sure how this affects the MV matrix in phong shader?)
   m_lastVP = m_VP;
   m_VP = m_proj * m_view;
-  m_VP = glm::translate(m_VP, m_sampleVector[count]);
-  renderScene();
+  m_VP = glm::translate(m_VP, m_sampleVector[m_jitterCounter]);
 
-  //PERFOM ANTI ALIASING-------------------------------------------------------------
+  //Scene
+  renderScene(false);
+
+  //AA
+  if (!m_firstFrame) {antialias();}
+
+  //Blit
+  blit(m_aaFBO, m_aaFBOColour, m_aaColourTU);
+
+  //Cycle jitter
+  m_jitterCounter++;
+  if (m_jitterCounter > 3) {m_jitterCounter = 0;}
+
+  m_firstFrame = false;
+}
+
+void RenderScene::antialias()
+{
   glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_aaFBO][taa_fboID]);
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
+
+  ngl::ShaderLib* shader = ngl::ShaderLib::instance();
+  ngl::VAOPrimitives* prim = ngl::VAOPrimitives::instance();
+  glm::mat4 screenMVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
+
+  shader->use("aaShader");
+  GLuint shaderID = shader->getProgramID("aaShader");
+
+  glm::mat4 inverseVPC = glm::inverse(m_VP);
+
   glActiveTexture(m_renderFBOColour);
   glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboTextureID]);
   glActiveTexture(m_renderFBODepth);
   glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboDepthID]);
   glActiveTexture(m_aaFBOColour);
   glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_aaFBO][taa_fboTextureID]);
-  glActiveTexture(m_aaFBODepth);
-  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_aaFBO][taa_fboDepthID]);
 
-  shader->use("PostProcessing");
-  pid = shader->getProgramID("PostProcessing");
-
-  glm::mat4 invP, invV, invVP, invVPPREVIOUS, vpPREVIOUS;
-  invP = glm::inverse(m_proj);
-  invV = glm::inverse(m_view);
-  invVP = glm::inverse(m_VP);
-  vpPREVIOUS = m_lastProj * m_lastView;
-  invVPPREVIOUS = glm::inverse(vpPREVIOUS);
-
-  glUniformMatrix4fv(glGetUniformLocation(pid, "inverseViewProjectionCURRENT"),
+  glUniform1i(glGetUniformLocation(shaderID, "colourRENDER"),       m_renderColourTU);
+  glUniform1i(glGetUniformLocation(shaderID, "depthRENDER"),        m_renderDepthTU);
+  glUniform1i(glGetUniformLocation(shaderID, "colourANTIALIASED"),  m_aaColourTU);
+  glUniform2f(glGetUniformLocation(shaderID, "windowSize"),         m_width, m_height);
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "inverseViewProjectionCURRENT"),
                      1,
                      false,
-                     glm::value_ptr(invVP));
-  glUniformMatrix4fv(glGetUniformLocation(pid, "viewProjectionPREVIOUS"),
+                     glm::value_ptr(inverseVPC));
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "viewProjectionPREVIOUS"),
                      1,
                      false,
                      glm::value_ptr(m_lastVP));
-  glUniform3fv(glGetUniformLocation(pid, "jitter"),
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "MVP"),
+                     1,
+                     false,
+                     glm::value_ptr(screenMVP));
+  glUniform3fv(glGetUniformLocation(shaderID, "jitter"),
                1,
-               glm::value_ptr(m_sampleVector[count]));
-
-  glUniform1i(glGetUniformLocation(pid, "fboTex"), m_renderColourTU);
-  glUniform1i(glGetUniformLocation(pid, "fboDepthTex"), m_renderDepthTU);
-  glUniform1i(glGetUniformLocation(pid, "pastfboTex"), m_aaColourTU);
-  glUniform1i(glGetUniformLocation(pid, "pastfboDepthTex"), m_aaDepthTU);
-  glUniform2f(glGetUniformLocation(pid, "windowSize"), m_width, m_height);
-
-  glm::mat4 screenMVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"), 1, false, glm::value_ptr(screenMVP));
+               glm::value_ptr(m_sampleVector[m_jitterCounter]));
 
   prim->draw("plane");
+}
 
+void RenderScene::blit(size_t _fbo, GLenum _texture, int _textureUnit)
+{
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
-  glActiveTexture(m_aaFBOColour);
-  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_aaFBO][taa_fboTextureID]);
 
-  pid = shader->getProgramID("blitShader");
+  ngl::ShaderLib* shader = ngl::ShaderLib::instance();
+  ngl::VAOPrimitives* prim = ngl::VAOPrimitives::instance();
+  glm::mat4 screenMVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
+
   shader->use("blitShader");
+  GLuint shaderID = shader->getProgramID("blitShader");
 
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"), 1, false, glm::value_ptr(screenMVP));
-  glUniform1i(glGetUniformLocation(pid, "inputTex"), m_aaColourTU);
-  glUniform2f(glGetUniformLocation(pid, "windowSize"), m_width, m_height);
+  glActiveTexture(_texture);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[_fbo][taa_fboTextureID]);
+
+  glUniform1i(glGetUniformLocation(shaderID, "inputTex"), _textureUnit);
+  glUniform2f(glGetUniformLocation(shaderID, "windowSize"), m_width, m_height);
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "MVP"),
+                     1,
+                     false,
+                     glm::value_ptr(screenMVP));
 
   prim->draw("plane");
-
   glBindTexture(GL_TEXTURE_2D, 0);
-
-  count++;
-  if (count > 3) {count = 0;}
 }
 
 void RenderScene::renderCubemap()
@@ -165,10 +171,8 @@ void RenderScene::renderCubemap()
   glm::mat3 cubeN;
 
   ngl::ShaderLib* shader = ngl::ShaderLib::instance();
-  GLuint pid = shader->getProgramID("EnvironmentProgram");
-  shader->use("EnvironmentProgram");
-
-
+  GLuint pid = shader->getProgramID("environmentShader");
+  shader->use("environmentShader");
 
   cubeM = glm::mat4(1.f);
   cubeM = glm::scale(cubeM, glm::vec3(200.f, 200.f, 200.f));
@@ -189,11 +193,15 @@ void RenderScene::renderCubemap()
   prim->draw("cube");
 }
 
-void RenderScene::renderScene()
+void RenderScene::renderScene(bool _cubemap)
 {
+  if (m_firstFrame) {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_aaFBO][taa_fboID]);}
+  else              {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);}
+  glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glViewport(0,0,m_width,m_height);
   ngl::ShaderLib* shader = ngl::ShaderLib::instance();
-  GLuint pid = shader->getProgramID("ColourProgram");
-  shader->use("ColourProgram");
+  GLuint pid = shader->getProgramID("phongShader");
+  shader->use("phongShader");
 
   glm::mat4 M, MV, MVP;
   glm::mat3 N;
@@ -219,6 +227,7 @@ void RenderScene::renderScene()
   {
     obj.m_mesh->draw();
   }
+  if (_cubemap) {renderCubemap();}
 }
 
 void RenderScene::setViewMatrix(glm::mat4 _view)
@@ -262,27 +271,25 @@ void RenderScene::initEnvironment()
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   GLfloat anisotropy;
   glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &anisotropy);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
+  glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
 
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  shader->use("EnvironmentProgram");
+  shader->use("environmentShader");
   shader->setUniform("envMap", 0);
 }
 
-void RenderScene::initEnvironmentSide(GLenum target, const char *filename)
+void RenderScene::initEnvironmentSide(GLenum _target, const char *_filename)
 {
-    ngl::Image img(filename);
-    glTexImage2D (
-      target,           // The target (in this case, which side of the cube)
-      0,                // Level of mipmap to load
-      img.format(),     // Internal format (number of colour components)
-      img.width(),      // Width in pixels
-      img.height(),     // Height in pixels
-      0,                // Border
-      img.format(),     // Format of the pixel data
-      GL_UNSIGNED_BYTE, // Data type of pixel data
-      img.getPixels()   // Pointer to image data in memory
-    );
+    ngl::Image img(_filename);
+    glTexImage2D(_target,
+                 0,
+                 int(img.format()),
+                 int(img.width()),
+                 int(img.height()),
+                 0,
+                 img.format(),
+                 GL_UNSIGNED_BYTE,
+                 img.getPixels());
 }
 
 

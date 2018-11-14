@@ -21,16 +21,15 @@ SOURCES +=      src/main.cpp \
                 src/objhandler.cpp \
                 src/shaderhandler.cpp
 
-OTHER_FILES +=  shaders/colour_v.glsl \
-                shaders/colour_f.glsl \
-                shaders/post_v.glsl \
-                shaders/post_f.glsl \
-                shaders/blit_v.glsl \
-                shaders/blit_f.glsl
-
 DISTFILES +=    $OTHER_FILES \
     shaders/env_f.glsl \
-    shaders/env_v.glsl
+    shaders/env_v.glsl \
+    shaders/aa_f.glsl \
+    shaders/aa_v.glsl \
+    shaders/phong_f.glsl \
+    shaders/phong_v.glsl \
+    shaders/blit_v.glsl \
+    shaders/blit_f.glsl
 
 QMAKE_CXXFLAGS+=$$system(sdl2-config  --cflags)
 message(output from sdl2-config --cflags added to CXXFLAGS= $$QMAKE_CXXFLAGS)
