@@ -150,9 +150,6 @@ void UserCamera::resize(const int _width, const int _height)
 
 void UserCamera::update()
 {
-//  std::cout<<m_keyIndex[taa_W]<<'\n';
-  glm::vec3 deltaV(0.f, 0.f, 0.f);
-
   if (m_keyIndex[taa_W]) {m_acceleration.x = -0.015f;}
   if (m_keyIndex[taa_S]) {m_acceleration.x =  0.015f;}
   if (m_keyIndex[taa_A]) {m_acceleration.z =  0.015f;}
@@ -160,10 +157,10 @@ void UserCamera::update()
   if (m_keyIndex[taa_Q]) {m_acceleration.y = -0.015f;}
   if (m_keyIndex[taa_E]) {m_acceleration.y =  0.015f;}
 
-  if (m_keyIndex[taa_LEFT])  {m_position.z +=  0.05f;}
-  if (m_keyIndex[taa_RIGHT]) {m_position.z -=  0.05f;}
-  if (m_keyIndex[taa_UP])    {m_position.y +=  0.05f;}
-  if (m_keyIndex[taa_DOWN])  {m_position.y -=  0.05f;}
+  if (m_keyIndex[taa_LEFT])  {m_position.z +=  0.1f;}
+  if (m_keyIndex[taa_RIGHT]) {m_position.z -=  0.1f;}
+  if (m_keyIndex[taa_UP])    {m_position.y +=  0.1f;}
+  if (m_keyIndex[taa_DOWN])  {m_position.y -=  0.1f;}
 
   if (!m_keyIndex[taa_W] && !m_keyIndex[taa_S]) {m_acceleration.x = 0.f;}
   if (!m_keyIndex[taa_A] && !m_keyIndex[taa_D]) {m_acceleration.z = 0.f;}
@@ -174,7 +171,6 @@ void UserCamera::update()
 
 
   m_velocity += m_acceleration;
-  m_velocity += deltaV;
   m_velocity *= 0.85f;
 
   m_position += m_velocity;

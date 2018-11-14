@@ -1,7 +1,7 @@
 #version 430
 
 uniform mat4 inverseViewProjectionCURRENT;
-uniform mat4 viewProjectionPREVIOUS;
+uniform mat4 viewProjectionHISTORY;
 uniform sampler2D colourRENDER;
 uniform sampler2D depthRENDER;
 uniform sampler2D colourANTIALIASED;
@@ -22,11 +22,12 @@ void main()
   vec4 worldSpacePosition = inverseViewProjectionCURRENT * clipSpacePosition;
   worldSpacePosition /= worldSpacePosition.w;
 
-  vec4 test = viewProjectionPREVIOUS * worldSpacePosition;
-  vec2 uvPREVIOUS = 0.5 * ( test.xy / test.w ) + 0.5;
-  vec4 colourHISTORY = texture(colourANTIALIASED, uvCURRENT);
+  vec4 screenSpaceHISTORY = viewProjectionHISTORY * worldSpacePosition;
+  vec2 uvHISTORY = 0.5 * ( screenSpaceHISTORY.xy / screenSpaceHISTORY.w ) + 0.5;
+  vec4 colourHISTORY = texture(colourANTIALIASED, uvHISTORY);
 
-  FragColour = 0.5 * colourCURRENT + 0.5 * colourHISTORY;
-  FragColour = colourHISTORY;
+  //FragColour = 0.5 * colourCURRENT + 0.5 * colourHISTORY;
+  FragColour = colourCURRENT;
+  //FragColour = colourHISTORY;
 }
 

@@ -123,7 +123,7 @@ void RenderScene::antialias()
                      1,
                      false,
                      glm::value_ptr(inverseVPC));
-  glUniformMatrix4fv(glGetUniformLocation(shaderID, "viewProjectionPREVIOUS"),
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "viewProjectionHISTORY"),
                      1,
                      false,
                      glm::value_ptr(m_lastVP));
