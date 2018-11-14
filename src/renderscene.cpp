@@ -26,17 +26,12 @@ void RenderScene::resizeGL(GLint _width, GLint _height) noexcept
 void RenderScene::initGL() noexcept
 {
   ngl::NGLInit::instance();
-  glClearColor(0.4f, 0.4f, 0.4f, 1.0f);
+  glClearColor(0.f, 0.f, 0.f, 1.f);
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_MULTISAMPLE);
 
-  m_arrObj[0].m_mesh = new ngl::Obj("models/blackPlastic.obj");
-  m_arrObj[1].m_mesh = new ngl::Obj("models/bluePlastic.obj");
-  m_arrObj[2].m_mesh = new ngl::Obj("models/gold.obj");
-  m_arrObj[3].m_mesh = new ngl::Obj("models/metal.obj");
-  m_arrObj[4].m_mesh = new ngl::Obj("models/translucentPlastic.obj");
-  m_arrObj[5].m_mesh = new ngl::Obj("models/faceplate.obj");
+  m_arrObj[0].m_mesh = new ngl::Obj("models/scene.obj");
 
   for (auto &i : m_arrObj)
   {
@@ -46,8 +41,8 @@ void RenderScene::initGL() noexcept
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 
   shader->loadShader("EnvironmentProgram",
-                     "shaders/env_vert.glsl",
-                     "shaders/env_frag.glsl");
+                     "shaders/env_v.glsl",
+                     "shaders/env_f.glsl");
 
 
   shader->loadShader("ColourProgram",
@@ -58,6 +53,10 @@ void RenderScene::initGL() noexcept
                      "shaders/post_v.glsl",
                      "shaders/post_f.glsl");
 
+  shader->loadShader("blitShader",
+                     "shaders/blit_v.glsl",
+                     "shaders/blit_f.glsl");
+
   initEnvironment();
 
   ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
@@ -66,52 +65,10 @@ void RenderScene::initGL() noexcept
 
 void RenderScene::paintGL() noexcept
 {
-  if (m_currentFBO == taa_fboA)
-  {
-    m_currentFBO = taa_fboB;
-    m_previousFBO = taa_fboA;
-  }
-  else
-  {
-    m_currentFBO = taa_fboA;
-    m_previousFBO = taa_fboB;
-  }
-
-  GLenum textureA;
-  GLenum textureB;
-  int texUnitA;
-  int texUnitB;
-  int texUnitC;
-  int texUnitD;
-
-  switch (m_currentFBO)
-  {
-    case (taa_fboA):
-    {
-      textureA = GL_TEXTURE1;
-      textureB = GL_TEXTURE2;
-      texUnitA = 1;
-      texUnitB = 2;
-      texUnitC = 3;
-      texUnitD = 4;
-      break;
-    }
-    default:
-    {
-      textureA = GL_TEXTURE3;
-      textureB = GL_TEXTURE4;
-      texUnitA = 3;
-      texUnitB = 4;
-      texUnitC = 1;
-      texUnitD = 2;
-      break;
-    }
-  }
-
   if (m_isFBODirty)
   {
-    initFBO(taa_fboA, textureA, textureB);
-    initFBO(taa_fboB, textureA, textureB);
+    initFBO(taa_fboA, m_renderFBOColour, m_renderFBODepth);
+    initFBO(taa_fboB, m_aaFBOColour, m_aaFBODepth);
     m_isFBODirty = false;
   }
 
@@ -119,93 +76,160 @@ void RenderScene::paintGL() noexcept
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   GLuint pid;
 
-  glm::mat4 M, MV, MVP;
-  glm::mat3 N;
 
   //RENDER TO FBO--------------------------------------------------------------------
-  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_currentFBO][taa_fboID]);
+  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
 
   //RENDER CUBEMAP-------------------------------------------------------------------
-  pid = shader->getProgramID("EnvironmentProgram");
-  shader->use("EnvironmentProgram");
-
-  M = glm::mat4(1.f);
-  M = glm::scale(M, glm::vec3(200.f, 200.f, 200.f));
-  MV = m_cube * M;
-  MVP = m_proj * MV;
-  N = glm::inverse(glm::mat3(MV));
-
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"),
-                     1,
-                     false,
-                     glm::value_ptr(MVP));
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MV"),
-                     1,
-                     false,
-                     glm::value_ptr(MV));
-  prim->draw("cube");
+  //renderCubemap();
 
   //RENDER OBJECTS-------------------------------------------------------------------
-  pid = shader->getProgramID("ColourProgram");
-  shader->use("ColourProgram");
+  static size_t count;
+  m_lastVP = m_VP;
+  m_VP = m_proj * m_view;
+  m_VP = glm::translate(m_VP, m_sampleVector[count]);
+  renderScene();
 
-  M = glm::mat4(1.f);
-  MV = m_view * M;
-  MVP = m_proj * MV;
-  N = glm::inverse(glm::mat3(MV));
-
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MV"),
-                     1,
-                     false,
-                     glm::value_ptr(MV));
-
-
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"),
-                     1,
-                     false,
-                     glm::value_ptr(MVP));
-  glUniformMatrix4fv(glGetUniformLocation(pid, "N"),
-                     1,
-                     true,
-                     glm::value_ptr(N));
-  for (auto &obj : m_arrObj)
-  {
-    obj.m_mesh->draw();
-  }
-
-  glBindFramebuffer(GL_FRAMEBUFFER,0);
+  //PERFOM ANTI ALIASING-------------------------------------------------------------
+  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_aaFBO][taa_fboID]);
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
-  glActiveTexture(textureA);
-  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_currentFBO][taa_fboTextureID]);
-  glActiveTexture(textureB);
-  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_currentFBO][taa_fboDepthID]);
+  glActiveTexture(m_renderFBOColour);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboTextureID]);
+  glActiveTexture(m_renderFBODepth);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboDepthID]);
+  glActiveTexture(m_aaFBOColour);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_aaFBO][taa_fboTextureID]);
+  glActiveTexture(m_aaFBODepth);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_aaFBO][taa_fboDepthID]);
 
   shader->use("PostProcessing");
   pid = shader->getProgramID("PostProcessing");
 
-  glUniform1i(glGetUniformLocation(pid, "fboTex"), texUnitA);
-  glUniform1i(glGetUniformLocation(pid, "fboDepthTex"), texUnitB);
-  glUniform1i(glGetUniformLocation(pid, "pastfboTex"), texUnitC);
-  glUniform1i(glGetUniformLocation(pid, "pastfboDepthTex"), texUnitD);
+  glm::mat4 invP, invV, invVP, invVPPREVIOUS, vpPREVIOUS;
+  invP = glm::inverse(m_proj);
+  invV = glm::inverse(m_view);
+  invVP = glm::inverse(m_VP);
+  vpPREVIOUS = m_lastProj * m_lastView;
+  invVPPREVIOUS = glm::inverse(vpPREVIOUS);
+
+  glUniformMatrix4fv(glGetUniformLocation(pid, "inverseViewProjectionCURRENT"),
+                     1,
+                     false,
+                     glm::value_ptr(invVP));
+  glUniformMatrix4fv(glGetUniformLocation(pid, "viewProjectionPREVIOUS"),
+                     1,
+                     false,
+                     glm::value_ptr(m_lastVP));
+  glUniform3fv(glGetUniformLocation(pid, "jitter"),
+               1,
+               glm::value_ptr(m_sampleVector[count]));
+
+  glUniform1i(glGetUniformLocation(pid, "fboTex"), m_renderColourTU);
+  glUniform1i(glGetUniformLocation(pid, "fboDepthTex"), m_renderDepthTU);
+  glUniform1i(glGetUniformLocation(pid, "pastfboTex"), m_aaColourTU);
+  glUniform1i(glGetUniformLocation(pid, "pastfboDepthTex"), m_aaDepthTU);
   glUniform2f(glGetUniformLocation(pid, "windowSize"), m_width, m_height);
 
-  MVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"), 1, false, glm::value_ptr(MVP));
+  glm::mat4 screenMVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
+  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"), 1, false, glm::value_ptr(screenMVP));
 
   prim->draw("plane");
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glViewport(0,0,m_width,m_height);
+  glActiveTexture(m_aaFBOColour);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_aaFBO][taa_fboTextureID]);
+
+  pid = shader->getProgramID("blitShader");
+  shader->use("blitShader");
+
+  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"), 1, false, glm::value_ptr(screenMVP));
+  glUniform1i(glGetUniformLocation(pid, "inputTex"), m_aaColourTU);
+  glUniform2f(glGetUniformLocation(pid, "windowSize"), m_width, m_height);
+
+  prim->draw("plane");
+
   glBindTexture(GL_TEXTURE_2D, 0);
+
+  count++;
+  if (count > 3) {count = 0;}
+}
+
+void RenderScene::renderCubemap()
+{
+  glm::mat4 cubeM, cubeMV, cubeMVP;
+  glm::mat3 cubeN;
+
+  ngl::ShaderLib* shader = ngl::ShaderLib::instance();
+  GLuint pid = shader->getProgramID("EnvironmentProgram");
+  shader->use("EnvironmentProgram");
+
+
+
+  cubeM = glm::mat4(1.f);
+  cubeM = glm::scale(cubeM, glm::vec3(200.f, 200.f, 200.f));
+  cubeMV = m_cube * cubeM;
+  cubeMVP = m_proj * cubeMV;
+  cubeN = glm::inverse(glm::mat3(cubeMV));
+
+  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"),
+                     1,
+                     false,
+                     glm::value_ptr(cubeMVP));
+  glUniformMatrix4fv(glGetUniformLocation(pid, "MV"),
+                     1,
+                     false,
+                     glm::value_ptr(cubeMV));
+
+  ngl::VAOPrimitives* prim = ngl::VAOPrimitives::instance();
+  prim->draw("cube");
+}
+
+void RenderScene::renderScene()
+{
+  ngl::ShaderLib* shader = ngl::ShaderLib::instance();
+  GLuint pid = shader->getProgramID("ColourProgram");
+  shader->use("ColourProgram");
+
+  glm::mat4 M, MV, MVP;
+  glm::mat3 N;
+  M = glm::mat4(1.f);
+  MV = m_view * M;
+  MVP = m_VP * M;
+  N = glm::inverse(glm::mat3(MV));
+
+  glUniformMatrix4fv(glGetUniformLocation(pid, "MV"),
+                     1,
+                     false,
+                     glm::value_ptr(MV));
+  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"),
+                     1,
+                     false,
+                     glm::value_ptr(MVP));
+  glUniformMatrix3fv(glGetUniformLocation(pid, "N"),
+                     1,
+                     true,
+                     glm::value_ptr(N));
+
+  for (auto &obj : m_arrObj)
+  {
+    obj.m_mesh->draw();
+  }
 }
 
 void RenderScene::setViewMatrix(glm::mat4 _view)
 {
+  m_lastView = m_view;
   m_view = _view;
 }
 
 void RenderScene::setProjMatrix(glm::mat4 _proj)
 {
+  m_lastProj = m_proj;
   m_proj = _proj;
 }
 
@@ -236,9 +260,9 @@ void RenderScene::initEnvironment()
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  //GLfloat anisotropy;
-  //glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &anisotropy);
-  //glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
+  GLfloat anisotropy;
+  glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &anisotropy);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
 
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("EnvironmentProgram");
@@ -269,7 +293,7 @@ void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == (GL_FRAMEBUFFER_COMPLETE))
   {
    glDeleteTextures(1, &m_arrFBO[_fboID][taa_fboTextureID]);
-   glDeleteTextures(1, &m_arrFBO[_fboID][taa_fboDepthTextureID]);
+   glDeleteTextures(1, &m_arrFBO[_fboID][taa_fboDepthID]);
    glDeleteFramebuffers(1, &m_arrFBO[_fboID][taa_fboID]);
   }
 
@@ -282,9 +306,9 @@ void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  glGenTextures(1, &m_arrFBO[_fboID][taa_fboDepthTextureID]);
+  glGenTextures(1, &m_arrFBO[_fboID][taa_fboDepthID]);
   glActiveTexture(_textureB);
-  glBindTexture(GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboDepthTextureID]);
+  glBindTexture(GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboDepthID]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -292,7 +316,7 @@ void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   glGenFramebuffers(1, &m_arrFBO[_fboID][taa_fboID]);
   glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_fboID][taa_fboID]);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboTextureID], 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboDepthTextureID], 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboDepthID], 0);
 
   GLenum drawBufs[] = {GL_COLOR_ATTACHMENT0};
   glDrawBuffers(1, drawBufs);

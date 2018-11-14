@@ -23,12 +23,14 @@ SOURCES +=      src/main.cpp \
 
 OTHER_FILES +=  shaders/colour_v.glsl \
                 shaders/colour_f.glsl \
-                shaders/env_vert.glsl \
-                shaders/env_frag.glsl \
                 shaders/post_v.glsl \
-                shaders/post_f.glsl
+                shaders/post_f.glsl \
+                shaders/blit_v.glsl \
+                shaders/blit_f.glsl
 
-DISTFILES +=    $OTHER_FILES
+DISTFILES +=    $OTHER_FILES \
+    shaders/env_f.glsl \
+    shaders/env_v.glsl
 
 QMAKE_CXXFLAGS+=$$system(sdl2-config  --cflags)
 message(output from sdl2-config --cflags added to CXXFLAGS= $$QMAKE_CXXFLAGS)

@@ -19,7 +19,7 @@ UserCamera::UserCamera() : m_position (10.f, 0.f, 0.f),
 
 void UserCamera::reset()
 {
-  m_position = {10.f, 0.f, 0.f};
+  m_position = {3.f, 1.f, 0.f};
   m_rotation = {0.f, 0.f};
   m_velocity = {0.f, 0.f, 0.f};
   m_acceleration = {0.f, 0.f, 0.f};
@@ -106,7 +106,7 @@ void UserCamera::resize(const int _width, const int _height)
 void UserCamera::update()
 {
 //  std::cout<<m_keyIndex[taa_W]<<'\n';
-
+  //m_position.z -= 0.05f;
   glm::vec3 deltaV(0.f, 0.f, 0.f);
 
   if (m_keyIndex[taa_W]) {m_acceleration.x = -0.015f;}
@@ -126,7 +126,7 @@ void UserCamera::update()
 
   m_velocity += m_acceleration;
   m_velocity += deltaV;
-  m_velocity *= 0.95f;
+  m_velocity *= 0.85f;
 
   m_position += m_velocity;
   m_target = glm::vec3(-1.f, 0.f, 0.f); //Default target is one unit in front of the camera at the origin.
@@ -138,7 +138,6 @@ void UserCamera::update()
   m_view = glm::lookAt(m_position, glm::vec3(m_target), glm::vec3(0.0f,1.0f,0.0f));
   m_proj = glm::perspective(m_fovy, m_aspect, m_zNear, m_zFar);
   m_cube = glm::lookAt({0.f, 0.f, 0.f}, m_target - m_position, {0.f, 1.f, 0.f});
-  //m_rotation = glm::vec2(0.f);
 }
 
 glm::mat4 UserCamera::viewMatrix() const
