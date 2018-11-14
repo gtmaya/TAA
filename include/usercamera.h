@@ -44,7 +44,7 @@ class UserCamera
     float m_zNear;
     float m_zFar;
     std::array<bool, 4> m_keyIndex;
-    enum m_taaKeyIndex {taa_W, taa_A, taa_S, taa_D, taa_Q, taa_E, taa_SPACE, taa_ESC};
+    enum m_taaKeyIndex {taa_W, taa_A, taa_S, taa_D, taa_Q, taa_E, taa_SPACE, taa_ESC, taa_LEFT, taa_RIGHT, taa_UP, taa_DOWN};
     glm::dvec2 m_mousePos;
     bool m_camMoved = true;
     bool m_trackingActive = true;

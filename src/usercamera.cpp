@@ -51,16 +51,13 @@ void UserCamera::handleMouseMove(const double _xpos, const double _ypos)
 }
 
 void UserCamera::handleMouseClick(const double _xpos, const double _ypos, const int _button, const int _action, const int _mods)
-{
-  std::cout<<"Mouse pos = "<<_xpos<<", "<<_ypos<<"; button = "<<_button<<" action = "<<_action<<" mods = "<<_mods<<'\n';
-}
+{}
 
 void UserCamera::handleScroll(const double _xoffset, const double _yoffset)
 {
-  std::cout<<_xoffset<<','<<_yoffset<<'\n';
-  m_fovy -= 0.05f * float(_yoffset);
-  if (m_fovy > glm::pi<float>() * 0.5f) {m_fovy = glm::pi<float>() * 0.5f;}
-  if (m_fovy < glm::pi<float>() * 0.01f) {m_fovy = glm::pi<float>() * 0.01f;}
+//  m_fovy -= 0.05f * float(_yoffset);
+//  if (m_fovy > glm::pi<float>() * 0.5f) {m_fovy = glm::pi<float>() * 0.5f;}
+//  if (m_fovy < glm::pi<float>() * 0.01f) {m_fovy = glm::pi<float>() * 0.01f;}
 }
 
 void UserCamera::handleKey(const int _key, const int _action)
@@ -71,6 +68,54 @@ void UserCamera::handleKey(const int _key, const int _action)
     case (GLFW_PRESS):
     {
       state = true;
+      switch (_key)
+      {
+        case (GLFW_KEY_LEFT):
+        {
+          m_keyIndex[taa_LEFT]  = !m_keyIndex[taa_LEFT];
+          if(m_keyIndex[taa_LEFT])
+          {
+            m_keyIndex[taa_RIGHT] = !m_keyIndex[taa_LEFT];
+            m_keyIndex[taa_UP]    = !m_keyIndex[taa_LEFT];
+            m_keyIndex[taa_DOWN]  = !m_keyIndex[taa_LEFT];
+          }
+          break;
+        }
+        case (GLFW_KEY_RIGHT):
+        {
+          m_keyIndex[taa_RIGHT] = !m_keyIndex[taa_RIGHT];
+          if(m_keyIndex[taa_RIGHT])
+          {
+            m_keyIndex[taa_LEFT]  = !m_keyIndex[taa_RIGHT];
+            m_keyIndex[taa_UP]    = !m_keyIndex[taa_RIGHT];
+            m_keyIndex[taa_DOWN]  = !m_keyIndex[taa_RIGHT];
+          }
+          break;
+        }
+        case (GLFW_KEY_UP):
+        {
+          m_keyIndex[taa_UP]  = !m_keyIndex[taa_UP];
+          if(m_keyIndex[taa_UP])
+          {
+            m_keyIndex[taa_LEFT] = !m_keyIndex[taa_UP];
+            m_keyIndex[taa_RIGHT]    = !m_keyIndex[taa_UP];
+            m_keyIndex[taa_DOWN]  = !m_keyIndex[taa_UP];
+          }
+          break;
+        }
+        case (GLFW_KEY_DOWN):
+        {
+          m_keyIndex[taa_DOWN]  = !m_keyIndex[taa_DOWN];
+          if(m_keyIndex[taa_DOWN])
+          {
+            m_keyIndex[taa_LEFT] = !m_keyIndex[taa_DOWN];
+            m_keyIndex[taa_RIGHT]    = !m_keyIndex[taa_DOWN];
+            m_keyIndex[taa_UP]  = !m_keyIndex[taa_DOWN];
+          }
+          break;
+        }
+        default : {break;}
+      }
       break;
     }
     case (GLFW_REPEAT):
@@ -106,7 +151,6 @@ void UserCamera::resize(const int _width, const int _height)
 void UserCamera::update()
 {
 //  std::cout<<m_keyIndex[taa_W]<<'\n';
-  m_position.z -= 0.05f;
   glm::vec3 deltaV(0.f, 0.f, 0.f);
 
   if (m_keyIndex[taa_W]) {m_acceleration.x = -0.015f;}
@@ -115,6 +159,11 @@ void UserCamera::update()
   if (m_keyIndex[taa_D]) {m_acceleration.z = -0.015f;}
   if (m_keyIndex[taa_Q]) {m_acceleration.y = -0.015f;}
   if (m_keyIndex[taa_E]) {m_acceleration.y =  0.015f;}
+
+  if (m_keyIndex[taa_LEFT])  {m_position.z +=  0.05f;}
+  if (m_keyIndex[taa_RIGHT]) {m_position.z -=  0.05f;}
+  if (m_keyIndex[taa_UP])    {m_position.y +=  0.05f;}
+  if (m_keyIndex[taa_DOWN])  {m_position.y -=  0.05f;}
 
   if (!m_keyIndex[taa_W] && !m_keyIndex[taa_S]) {m_acceleration.x = 0.f;}
   if (!m_keyIndex[taa_A] && !m_keyIndex[taa_D]) {m_acceleration.z = 0.f;}

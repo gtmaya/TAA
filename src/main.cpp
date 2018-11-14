@@ -107,7 +107,16 @@ int main()
   glfwSetScrollCallback(window, scroll_callback);
 
   r_scene.initGL();
-  std::cout<<"Controls:\n          -----forward---- W ----------------\n          -----left----- A   S ----right-----\n          -----backward--- D ----------------\n\n                         SPACE\n                toggle cursor window lock\n";
+  std::cout<<"\n\n\nControls:\n"
+             "               forward   W\n"
+             "            left/right A   S\n"
+             "              backward   D \n"
+             "\n"
+             "                  SPACE\n"
+             "         toggle cursor window lock\n"
+             "\n"
+             "                  ENTER\n"
+             "          reset camera position\n\n\n";
 
   // Set the window resize callback and call it once
   glfwSetFramebufferSizeCallback(window, resize_callback);
