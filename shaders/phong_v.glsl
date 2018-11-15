@@ -3,6 +3,7 @@
 uniform mat4 MVP;
 uniform mat4 MV;
 uniform mat3 N;
+uniform vec2 jitter;
 
 
 layout (location=0) in vec3 VertexPosition;
@@ -21,4 +22,5 @@ void main()
   fragTexCoord = TexCoord;
   gl_Position = MVP * vec4(VertexPosition,1.0);
   testOut = MVP * vec4(VertexPosition, 1.f);
+  gl_Position.xy += jitter.xy;
 }

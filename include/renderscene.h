@@ -69,10 +69,10 @@ class RenderScene
 
     std::array<ObjHandler, 1> m_arrObj;
 
-    std::array<glm::vec3, 4> m_sampleVector {glm::vec3(0.f,  0.0001f,  0.0001f),
-                                             glm::vec3(0.f,  0.0001f, -0.0001f),
-                                             glm::vec3(0.f, -0.0001f, -0.0001f),
-                                             glm::vec3(0.f, -0.0001f,  0.0001f)};
+    std::array<glm::vec2, 4> m_sampleVector {glm::vec2( 0.0005f,  0.0005f),
+                                             glm::vec2( 0.0005f, -0.0005f),
+                                             glm::vec2(-0.0005f, -0.0005f),
+                                             glm::vec2(-0.0005f,  0.0005f)};
 
     size_t m_jitterCounter = 0;
 

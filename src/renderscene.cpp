@@ -81,7 +81,6 @@ void RenderScene::paintGL() noexcept
   //Jitter VP matrix (not sure how this affects the MV matrix in phong shader?)
   m_lastVP = m_VP;
   m_VP = m_proj * m_view;
-  m_VP = glm::translate(m_VP, m_sampleVector[m_jitterCounter]);
 
   //Scene
   renderScene(false, activeAAFBO);
@@ -149,7 +148,7 @@ void RenderScene::antialias(size_t _activeAAFBO)
                      1,
                      false,
                      glm::value_ptr(screenMVP));
-  glUniform3fv(glGetUniformLocation(shaderID, "jitter"),
+  glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
                1,
                glm::value_ptr(m_sampleVector[m_jitterCounter]));
 
@@ -189,7 +188,7 @@ void RenderScene::renderCubemap()
   glm::mat3 cubeN;
 
   ngl::ShaderLib* shader = ngl::ShaderLib::instance();
-  GLuint pid = shader->getProgramID("environmentShader");
+  GLuint shaderID = shader->getProgramID("environmentShader");
   shader->use("environmentShader");
 
   cubeM = glm::mat4(1.f);
@@ -198,14 +197,17 @@ void RenderScene::renderCubemap()
   cubeMVP = m_proj * cubeMV;
   cubeN = glm::inverse(glm::mat3(cubeMV));
 
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"),
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "MVP"),
                      1,
                      false,
                      glm::value_ptr(cubeMVP));
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MV"),
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "MV"),
                      1,
                      false,
                      glm::value_ptr(cubeMV));
+  glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
+               1,
+               glm::value_ptr(m_sampleVector[m_jitterCounter]));
 
   ngl::VAOPrimitives* prim = ngl::VAOPrimitives::instance();
   prim->draw("cube");
@@ -218,7 +220,7 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
   ngl::ShaderLib* shader = ngl::ShaderLib::instance();
-  GLuint pid = shader->getProgramID("phongShader");
+  GLuint shaderID = shader->getProgramID("phongShader");
   shader->use("phongShader");
 
   glm::mat4 M, MV, MVP;
@@ -229,15 +231,15 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
   MVP = m_VP * M;
   N = glm::inverse(glm::mat3(MV));
 
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MV"),
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "MV"),
                      1,
                      false,
                      glm::value_ptr(MV));
-  glUniformMatrix4fv(glGetUniformLocation(pid, "MVP"),
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "MVP"),
                      1,
                      false,
                      glm::value_ptr(MVP));
-  glUniformMatrix3fv(glGetUniformLocation(pid, "N"),
+  glUniformMatrix3fv(glGetUniformLocation(shaderID, "N"),
                      1,
                      true,
                      glm::value_ptr(N));
