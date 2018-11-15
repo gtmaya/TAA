@@ -84,7 +84,7 @@ void RenderScene::paintGL() noexcept
   m_VP = glm::translate(m_VP, m_sampleVector[m_jitterCounter]);
 
   //Scene
-  renderScene(true, activeAAFBO);
+  renderScene(false, activeAAFBO);
 
   //AA
   if (!m_aaDirty) {antialias(activeAAFBO);}
