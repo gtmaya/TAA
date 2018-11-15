@@ -30,7 +30,7 @@ void RenderScene::initGL() noexcept
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_MULTISAMPLE);
 
-  m_arrObj[0].m_mesh = new ngl::Obj("models/scene.obj");
+  m_arrObj[0].m_mesh = new ngl::Obj("models/scene2.obj");
 
   for (auto &i : m_arrObj)
   {
@@ -68,9 +68,15 @@ void RenderScene::paintGL() noexcept
   if (m_isFBODirty)
   {
     initFBO(m_renderFBO, m_renderFBOColour, m_renderFBODepth);
-    initFBO(m_aaFBO, m_aaFBOColour, m_aaFBODepth);
+    initFBO(m_aaFBO1, m_aaFBOColour1, m_aaFBODepth1);
+    initFBO(m_aaFBO2, m_aaFBOColour2, m_aaFBODepth2);
+    m_aaDirty = true;
     m_isFBODirty = false;
   }
+
+  size_t activeAAFBO;
+  if (m_flip) {activeAAFBO = m_aaFBO1;}
+  else        {activeAAFBO = m_aaFBO2;}
 
   //Jitter VP matrix (not sure how this affects the MV matrix in phong shader?)
   m_lastVP = m_VP;
@@ -78,24 +84,26 @@ void RenderScene::paintGL() noexcept
   m_VP = glm::translate(m_VP, m_sampleVector[m_jitterCounter]);
 
   //Scene
-  renderScene(false);
+  renderScene(true, activeAAFBO);
 
   //AA
-  if (!m_firstFrame) {antialias();}
+  if (!m_aaDirty) {antialias(activeAAFBO);}
 
   //Blit
-  blit(m_aaFBO, m_aaFBOColour, m_aaColourTU);
+  if (m_flip) {blit(m_aaFBO1, m_aaFBOColour1, m_aaColourTU1);}
+  else        {blit(m_aaFBO2, m_aaFBOColour2, m_aaColourTU2);}
 
   //Cycle jitter
   m_jitterCounter++;
   if (m_jitterCounter > 3) {m_jitterCounter = 0;}
 
-  m_firstFrame = false;
+  m_aaDirty = false;
+  m_flip = !m_flip;
 }
 
-void RenderScene::antialias()
+void RenderScene::antialias(size_t _activeAAFBO)
 {
-  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_aaFBO][taa_fboID]);
+  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_activeAAFBO][taa_fboID]);
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
 
@@ -112,12 +120,22 @@ void RenderScene::antialias()
   glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboTextureID]);
   glActiveTexture(m_renderFBODepth);
   glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboDepthID]);
-  glActiveTexture(m_aaFBOColour);
-  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_aaFBO][taa_fboTextureID]);
+  //Bind the inactive aaFBO
+  if (_activeAAFBO == m_aaFBO1)
+  {
+    glActiveTexture(m_aaFBOColour2);
+    glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_aaFBO2][taa_fboTextureID]);
+  }
+  else
+  {
+    glActiveTexture(m_aaFBOColour1);
+    glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_aaFBO1][taa_fboTextureID]);
+  }
 
   glUniform1i(glGetUniformLocation(shaderID, "colourRENDER"),       m_renderColourTU);
   glUniform1i(glGetUniformLocation(shaderID, "depthRENDER"),        m_renderDepthTU);
-  glUniform1i(glGetUniformLocation(shaderID, "colourANTIALIASED"),  m_aaColourTU);
+  if (_activeAAFBO == m_aaFBO1) {glUniform1i(glGetUniformLocation(shaderID, "colourANTIALIASED"),  m_aaColourTU2);} //Bind the inactive aaFBO
+  else                          {glUniform1i(glGetUniformLocation(shaderID, "colourANTIALIASED"),  m_aaColourTU1);}
   glUniform2f(glGetUniformLocation(shaderID, "windowSize"),         m_width, m_height);
   glUniformMatrix4fv(glGetUniformLocation(shaderID, "inverseViewProjectionCURRENT"),
                      1,
@@ -193,10 +211,10 @@ void RenderScene::renderCubemap()
   prim->draw("cube");
 }
 
-void RenderScene::renderScene(bool _cubemap)
+void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
 {
-  if (m_firstFrame) {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_aaFBO][taa_fboID]);}
-  else              {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);}
+  if (m_aaDirty) {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_activeAAFBO][taa_fboID]);}
+  else           {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);}
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
   ngl::ShaderLib* shader = ngl::ShaderLib::instance();
@@ -206,6 +224,7 @@ void RenderScene::renderScene(bool _cubemap)
   glm::mat4 M, MV, MVP;
   glm::mat3 N;
   M = glm::mat4(1.f);
+  M = glm::rotate(M, glm::pi<float>() * 0.25f, {0.f, 1.f, 0.f});
   MV = m_view * M;
   MVP = m_VP * M;
   N = glm::inverse(glm::mat3(MV));

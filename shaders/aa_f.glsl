@@ -26,8 +26,8 @@ void main()
   vec2 uvHISTORY = 0.5 * ( screenSpaceHISTORY.xy / screenSpaceHISTORY.w ) + 0.5;
   vec4 colourHISTORY = texture(colourANTIALIASED, uvHISTORY);
 
-  //FragColour = 0.5 * colourCURRENT + 0.5 * colourHISTORY;
-  FragColour = colourCURRENT;
-  //FragColour = colourHISTORY;
+  FragColour = 0.25 * colourCURRENT + 0.75 * colourHISTORY;
+  //FragColour = colourCURRENT;
+//  FragColour = colourHISTORY;
 }
 
