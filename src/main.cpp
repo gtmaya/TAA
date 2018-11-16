@@ -129,7 +129,9 @@ int main()
              "         toggle cursor window lock\n"
              "\n"
              "                  ENTER\n"
-             "          reset camera position\n\n\n";
+             "          reset camera position\n"
+             "              1 - Toggle AA\n"
+             "         2 - Reset AA accumulation\n\n\n";
 
   // Set the window resize callback and call it once
   glfwSetFramebufferSizeCallback(window, resize_callback);

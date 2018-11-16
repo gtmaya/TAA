@@ -1,8 +1,8 @@
 #include "usercamera.h"
 #include <glm/gtx/string_cast.hpp>
 
-UserCamera::UserCamera() : m_position (10.f, 0.f, 0.f),
-                           m_rotation (0.f, 0.f),
+UserCamera::UserCamera() : m_position (5.5f, 4.f, 16.25f),
+                           m_rotation (5.25f, -0.132f),
                            m_velocity (0.f, 0.f, 0.f),
                            m_acceleration (0.f, 0.f, 0.f),
                            m_target (-1.f, 0.f, 0.f),
@@ -19,8 +19,8 @@ UserCamera::UserCamera() : m_position (10.f, 0.f, 0.f),
 
 void UserCamera::reset()
 {
-  m_position = {3.f, 1.f, 0.f};
-  m_rotation = {0.f, 0.f};
+  m_position = {5.5f, 4.f, 16.25f};
+  m_rotation = {5.25f, -0.132f};
   m_velocity = {0.f, 0.f, 0.f};
   m_acceleration = {0.f, 0.f, 0.f};
   m_target = {-1.f, 0.f, 0.f};
