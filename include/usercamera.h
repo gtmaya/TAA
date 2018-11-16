@@ -23,6 +23,7 @@ class UserCamera
     glm::mat4 viewMatrix() const;
     glm::mat4 projMatrix() const;
     glm::mat4 cubeMatrix() const;
+    glm::vec3 getLocation() const;
     void toggleCursorState();
     bool cursorActive() const;
     void reset();

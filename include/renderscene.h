@@ -20,6 +20,9 @@ class RenderScene
     void setViewMatrix(glm::mat4 _view);
     void setProjMatrix(glm::mat4 _proj);
     void setCubeMatrix(glm::mat4 _cube);
+    void setCameraLocation(glm::vec3 _location);
+    void toggleAA();
+    void resetAA();
 
   private:
     void renderCubemap();
@@ -59,6 +62,8 @@ class RenderScene
     GLint   m_height;
     GLfloat m_ratio;
 
+    glm::vec3 m_cameraPos;
+
     glm::mat4 m_view;
     glm::mat4 m_proj;
     glm::mat4 m_lastView;
@@ -67,16 +72,49 @@ class RenderScene
     glm::mat4 m_lastVP;
     glm::mat4 m_cube;
 
-    std::array<ObjHandler, 1> m_arrObj;
+    std::array<ObjHandler, 6> m_arrObj;
 
-    std::array<glm::vec2, 4> m_sampleVector {glm::vec2( 0.0005f,  0.0005f),
-                                             glm::vec2( 0.0005f, -0.0005f),
-                                             glm::vec2(-0.0005f, -0.0005f),
-                                             glm::vec2(-0.0005f,  0.0005f)};
+    std::array<glm::vec2, 4> m_sampleVector {glm::vec2( 1.f,  1.f),
+                                             glm::vec2( 1.f, -1.f),
+                                             glm::vec2(-1.f, -1.f),
+                                             glm::vec2(-1.f,  1.f)};
+
+    float m_jitterMagnitude = 0.00055f;
 
     size_t m_jitterCounter = 0;
 
     bool m_flip = true;
+    bool m_aaOn = true;
+
+    std::array<glm::vec3, 14> m_lightPos = {glm::vec3( 1.506f, 0.815f, 0.041f),
+                                            glm::vec3( 0.079f, 0.609f,-1.026f),
+                                            glm::vec3( 3.534f, 0.432f, 3.913f),
+                                            glm::vec3( 1.254f, 0.453f, 4.827f),
+                                            glm::vec3( 0.783f, 0.837f,-0.679f),
+                                            glm::vec3( 0.783f, 0.239f,-0.679f),
+                                            glm::vec3( 1.568f, 0.246f, 0.037f),
+                                            glm::vec3(-0.069f, 0.031f,-1.023f),
+                                            glm::vec3(-3.215f, 0.069f, 1.761f),
+                                            glm::vec3(-1.340f, 0.217f,-1.599f),
+                                            glm::vec3( 0.073f,-0.432f, 0.045f),
+                                            glm::vec3( 0.419f,-0.106f, 0.675f),
+                                            glm::vec3( 0.091f, 0.822f, 1.050f),
+                                            glm::vec3(-0.231f,-0.938f, 1.825f)};
+
+    std::array<glm::vec3, 14> m_lightCol = {glm::vec3(0.551f, 0.887f, 1.000f),
+                                            glm::vec3(0.432f, 0.795f, 0.995f),
+                                            glm::vec3(0.485f, 0.542f, 0.562f),
+                                            glm::vec3(0.314f, 0.384f, 0.296f),
+                                            glm::vec3(0.390f, 0.735f, 0.999f),
+                                            glm::vec3(0.817f, 0.915f, 1.000f),
+                                            glm::vec3(0.443f, 0.575f, 0.739f),
+                                            glm::vec3(0.187f, 0.249f, 0.317f),
+                                            glm::vec3(0.152f, 0.197f, 0.237f),
+                                            glm::vec3(0.270f, 0.238f, 0.158f),
+                                            glm::vec3(0.084f, 0.098f, 0.045f),
+                                            glm::vec3(0.223f, 0.331f, 0.407f),
+                                            glm::vec3(0.209f, 0.188f, 0.150f),
+                                            glm::vec3(0.441f, 0.376f, 0.276f)};
 };
 
 #endif

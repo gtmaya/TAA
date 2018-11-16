@@ -42,7 +42,7 @@ void main()
 {
   vec3 n = normalize( fragNormal );
   vec3 transformedLight = vec4(MV * Light.Position).xyz;
-  vec3 s = normalize( vec3(Light.Position) - fragPosition );
+  vec3 s = normalize( vec3(transformedLight) - fragPosition );
   vec3 v = normalize(vec3(-fragPosition));
   vec3 r = reflect( -s, n );
   vec3 lightColor = (Light.La * Material.Ka +

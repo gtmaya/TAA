@@ -56,6 +56,18 @@ void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int
       case (GLFW_KEY_ENTER):
       {
         r_camera.reset();
+        r_scene.resetAA();
+        break;
+      }
+      case (GLFW_KEY_1):
+      {
+        r_scene.toggleAA();
+        break;
+      }
+      case (GLFW_KEY_2):
+      {
+        r_scene.resetAA();
+        break;
       }
     }
   }
@@ -132,6 +144,7 @@ int main()
     r_scene.setViewMatrix(r_camera.viewMatrix());
     r_scene.setProjMatrix(r_camera.projMatrix());
     r_scene.setCubeMatrix(r_camera.cubeMatrix());
+    r_scene.setCameraLocation(r_camera.getLocation());
 
     r_scene.paintGL();
 

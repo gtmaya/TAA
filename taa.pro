@@ -29,7 +29,9 @@ DISTFILES +=    $OTHER_FILES \
     shaders/phong_f.glsl \
     shaders/phong_v.glsl \
     shaders/blit_v.glsl \
-    shaders/blit_f.glsl
+    shaders/blit_f.glsl \
+    shaders/beckmann_v.glsl \
+    shaders/beckmann_f.glsl
 
 QMAKE_CXXFLAGS+=$$system(sdl2-config  --cflags)
 message(output from sdl2-config --cflags added to CXXFLAGS= $$QMAKE_CXXFLAGS)

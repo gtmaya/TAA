@@ -200,6 +200,11 @@ glm::mat4 UserCamera::cubeMatrix() const
   return m_cube;
 }
 
+glm::vec3 UserCamera::getLocation() const
+{
+  return m_position;
+}
+
 void UserCamera::toggleCursorState()
 {
   m_trackingActive = !m_trackingActive;

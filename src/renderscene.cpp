@@ -10,7 +10,12 @@
 RenderScene::RenderScene() : m_width(1),
                              m_height(1),
                              m_ratio(1.0f)
-{}
+{
+  for (auto &i : m_sampleVector)
+  {
+    i *= m_jitterMagnitude;
+  }
+}
 
 RenderScene::~RenderScene() = default;
 
@@ -30,7 +35,12 @@ void RenderScene::initGL() noexcept
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_MULTISAMPLE);
 
-  m_arrObj[0].m_mesh = new ngl::Obj("models/scene2.obj");
+  m_arrObj[0].m_mesh = new ngl::Obj("models/cube.obj");
+  m_arrObj[1].m_mesh = new ngl::Obj("models/gear.obj");
+  m_arrObj[2].m_mesh = new ngl::Obj("models/plane.obj");
+  m_arrObj[3].m_mesh = new ngl::Obj("models/platonic.obj");
+  m_arrObj[4].m_mesh = new ngl::Obj("models/text.obj");
+  m_arrObj[5].m_mesh = new ngl::Obj("models/torus.obj");
 
   for (auto &i : m_arrObj)
   {
@@ -43,10 +53,13 @@ void RenderScene::initGL() noexcept
                      "shaders/env_v.glsl",
                      "shaders/env_f.glsl");
 
-
   shader->loadShader("phongShader",
                      "shaders/phong_v.glsl",
                      "shaders/phong_f.glsl");
+
+  shader->loadShader("beckmannShader",
+                     "shaders/beckmann_v.glsl",
+                     "shaders/beckmann_f.glsl");
 
   shader->loadShader("aaShader",
                      "shaders/aa_v.glsl",
@@ -57,6 +70,17 @@ void RenderScene::initGL() noexcept
                      "shaders/blit_f.glsl");
 
   initEnvironment();
+
+  shader->use("beckmannShader");
+  GLuint shaderID = shader->getProgramID("beckmannShader");
+
+  glUniform3fv(glGetUniformLocation(shaderID, "lightCol"),
+               int(m_lightCol.size()),
+               glm::value_ptr(m_lightCol[0]));
+
+  glUniform3fv(glGetUniformLocation(shaderID, "lightPos"),
+               int(m_lightCol.size()),
+               glm::value_ptr(m_lightPos[0]));
 
   ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
   prim->createTrianglePlane("plane",2,2,1,1,ngl::Vec3(0,1,0));
@@ -86,7 +110,7 @@ void RenderScene::paintGL() noexcept
   renderScene(false, activeAAFBO);
 
   //AA
-  if (!m_aaDirty) {antialias(activeAAFBO);}
+  if (!m_aaDirty && m_aaOn) {antialias(activeAAFBO);}
 
   //Blit
   if (m_flip) {blit(m_aaFBO1, m_aaFBOColour1, m_aaColourTU1);}
@@ -148,9 +172,16 @@ void RenderScene::antialias(size_t _activeAAFBO)
                      1,
                      false,
                      glm::value_ptr(screenMVP));
-  glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
-               1,
-               glm::value_ptr(m_sampleVector[m_jitterCounter]));
+  if (m_aaOn)
+  {
+    glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
+                 1,
+                 glm::value_ptr(m_sampleVector[m_jitterCounter]));
+  }
+  else
+  {
+    glUniform2f(glGetUniformLocation(shaderID, "jitter"), 0.f, 0.f);
+  }
 
   prim->draw("plane");
 }
@@ -215,13 +246,13 @@ void RenderScene::renderCubemap()
 
 void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
 {
-  if (m_aaDirty) {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_activeAAFBO][taa_fboID]);}
-  else           {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);}
+  if (m_aaDirty || !m_aaOn) {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_activeAAFBO][taa_fboID]);}
+  else                      {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);}
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
   ngl::ShaderLib* shader = ngl::ShaderLib::instance();
-  GLuint shaderID = shader->getProgramID("phongShader");
-  shader->use("phongShader");
+  GLuint shaderID = shader->getProgramID("beckmannShader");
+  shader->use("beckmannShader");
 
   glm::mat4 M, MV, MVP;
   glm::mat3 N;
@@ -243,6 +274,18 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
                      1,
                      true,
                      glm::value_ptr(N));
+
+  glUniform1f(glGetUniformLocation(shaderID, "roughness"), 1.f);
+  glUniform1f(glGetUniformLocation(shaderID, "metallic"), 0.1f);
+  glUniform1f(glGetUniformLocation(shaderID, "diffAmount"), 0.2f);
+  glUniform1f(glGetUniformLocation(shaderID, "specAmount"), 0.f);
+  glUniform3f(glGetUniformLocation(shaderID, "materialDiff"), 1.f, 1.f, 1.f);
+  glUniform3f(glGetUniformLocation(shaderID, "materialSpec"), 1.f, 1.f, 1.f);
+  glUniform1f(glGetUniformLocation(shaderID, "alpha"), 1.f);
+
+  glUniform3fv(glGetUniformLocation(shaderID, "cameraPos"),
+               1,
+               glm::value_ptr(m_cameraPos));
 
   for (auto &obj : m_arrObj)
   {
@@ -266,6 +309,21 @@ void RenderScene::setProjMatrix(glm::mat4 _proj)
 void RenderScene::setCubeMatrix(glm::mat4 _cube)
 {
   m_cube = _cube;
+}
+
+void RenderScene::setCameraLocation(glm::vec3 _location)
+{
+  m_cameraPos = _location;
+}
+
+void RenderScene::toggleAA()
+{
+  m_aaOn = !m_aaOn;
+}
+
+void RenderScene::resetAA()
+{
+  m_aaDirty = true;
 }
 
 void RenderScene::initEnvironment()
@@ -296,6 +354,8 @@ void RenderScene::initEnvironment()
 
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   shader->use("environmentShader");
+  shader->setUniform("envMap", 0);
+  shader->use("beckmannShader");
   shader->setUniform("envMap", 0);
 }
 
