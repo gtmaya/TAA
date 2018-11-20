@@ -226,7 +226,7 @@ void RenderScene::renderCubemap()
   cubeM = glm::scale(cubeM, glm::vec3(200.f, 200.f, 200.f));
   cubeMV = m_cube * cubeM;
   cubeMVP = m_proj * cubeMV;
-  cubeN = glm::inverse(glm::mat3(cubeMV));
+  cubeN = glm::inverse(glm::mat3(cubeM));
 
   glUniformMatrix4fv(glGetUniformLocation(shaderID, "MVP"),
                      1,
@@ -260,7 +260,7 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
   M = glm::rotate(M, glm::pi<float>() * 0.25f, {0.f, 1.f, 0.f});
   MV = m_view * M;
   MVP = m_VP * M;
-  N = glm::inverse(glm::mat3(MV));
+  N = glm::inverse(glm::mat3(M));
 
   glUniformMatrix4fv(glGetUniformLocation(shaderID, "MV"),
                      1,
@@ -275,14 +275,14 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
                      true,
                      glm::value_ptr(N));
 
-  glUniform1f(glGetUniformLocation(shaderID, "roughness"), 1.f);
-  glUniform1f(glGetUniformLocation(shaderID, "metallic"), 0.1f);
+  glUniform1f(glGetUniformLocation(shaderID, "roughness"), 0.5f);
+  glUniform1f(glGetUniformLocation(shaderID, "metallic"), 0.5f);
   glUniform1f(glGetUniformLocation(shaderID, "diffAmount"), 0.2f);
-  glUniform1f(glGetUniformLocation(shaderID, "specAmount"), 0.f);
+  glUniform1f(glGetUniformLocation(shaderID, "specAmount"), 0.05f);
   glUniform3f(glGetUniformLocation(shaderID, "materialDiff"), 1.f, 1.f, 1.f);
   glUniform3f(glGetUniformLocation(shaderID, "materialSpec"), 1.f, 1.f, 1.f);
   glUniform1f(glGetUniformLocation(shaderID, "alpha"), 1.f);
-
+  glUniform1i(glGetUniformLocation(shaderID, "envMaxLOD"), 10);
   glUniform3fv(glGetUniformLocation(shaderID, "cameraPos"),
                1,
                glm::value_ptr(m_cameraPos));

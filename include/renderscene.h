@@ -79,7 +79,7 @@ class RenderScene
                                              glm::vec2(-1.f, -1.f),
                                              glm::vec2(-1.f,  1.f)};
 
-    float m_jitterMagnitude = 0.00055f;
+    float m_jitterMagnitude = 0.00035f;
 
     size_t m_jitterCounter = 0;
 

@@ -98,7 +98,7 @@ int main()
   int width = 1200; int height = 720;
   GLFWwindow* window = glfwCreateWindow(width,
                                         height,
-                                        "Basic Render Scene",
+                                        "Temporal Anti Aliasing Demo",
                                         nullptr,
                                         nullptr);
 
