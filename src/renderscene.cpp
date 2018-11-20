@@ -10,12 +10,7 @@
 RenderScene::RenderScene() : m_width(1),
                              m_height(1),
                              m_ratio(1.0f)
-{
-  for (auto &i : m_sampleVector)
-  {
-    i *= m_jitterMagnitude;
-  }
-}
+{}
 
 RenderScene::~RenderScene() = default;
 
@@ -25,6 +20,7 @@ void RenderScene::resizeGL(GLint _width, GLint _height) noexcept
   m_height = _height;
   m_ratio = m_width / float(m_height);
   m_isFBODirty = true;
+  updateJitter();
 }
 
 void RenderScene::initGL() noexcept
@@ -176,7 +172,7 @@ void RenderScene::antialias(size_t _activeAAFBO)
   {
     glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
                  1,
-                 glm::value_ptr(m_sampleVector[m_jitterCounter]));
+                 glm::value_ptr(m_jitterVector[m_jitterCounter]));
   }
   else
   {
@@ -412,4 +408,13 @@ void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {std::cout<<"Help\n";}
+}
+
+void RenderScene::updateJitter()
+{
+  for (size_t i = 0; i < m_jitterVector.size(); i++)
+  {
+    m_jitterVector[i] = m_sampleVector[i] * m_jitterMagnitude * glm::vec2(500.f/m_width, 500.f/m_height);
+    std::cout<<glm::to_string(m_jitterVector[i])<<'\n';
+  }
 }

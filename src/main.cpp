@@ -95,7 +95,7 @@ int main()
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-  int width = 1200; int height = 720;
+  int width = 500; int height = 500;
   GLFWwindow* window = glfwCreateWindow(width,
                                         height,
                                         "Temporal Anti Aliasing Demo",

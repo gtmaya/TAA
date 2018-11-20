@@ -32,6 +32,7 @@ class RenderScene
     void initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB);
     void initEnvironment();
     void initEnvironmentSide(GLenum _target, const char *_filename);
+    void updateJitter();
     bool m_isFBODirty = true;
     bool m_aaDirty = true;
 
@@ -78,8 +79,9 @@ class RenderScene
                                              glm::vec2( 1.f, -1.f),
                                              glm::vec2(-1.f, -1.f),
                                              glm::vec2(-1.f,  1.f)};
+    std::array<glm::vec2, 4> m_jitterVector;
 
-    float m_jitterMagnitude = 0.00035f;
+    float m_jitterMagnitude = 0.00075f;
 
     size_t m_jitterCounter = 0;
 
