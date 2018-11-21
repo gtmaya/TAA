@@ -27,6 +27,7 @@ in vec3 fragNormal;
 in vec4 fragPosition;
 in vec2 fragTexCoord;
 in vec3 worldPos;
+in vec2 testOut;
 
 //Constants
 const float small = 0.0001f;

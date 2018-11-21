@@ -6,11 +6,15 @@
 #include <ngl/NGLInit.h>
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
+#include <iomanip>
 
 RenderScene::RenderScene() : m_width(1),
                              m_height(1),
                              m_ratio(1.0f)
-{}
+{
+  m_startTime = std::chrono::high_resolution_clock::now();
+  m_prevFrameTime = std::chrono::high_resolution_clock::now();
+}
 
 RenderScene::~RenderScene() = default;
 
@@ -84,6 +88,7 @@ void RenderScene::initGL() noexcept
 
 void RenderScene::paintGL() noexcept
 {
+  static int count = 0;
   //Common stuff
   if (m_isFBODirty)
   {
@@ -98,7 +103,6 @@ void RenderScene::paintGL() noexcept
   if (m_flip) {activeAAFBO = m_aaFBO1;}
   else        {activeAAFBO = m_aaFBO2;}
 
-  //Jitter VP matrix (not sure how this affects the MV matrix in phong shader?)
   m_lastVP = m_VP;
   m_VP = m_proj * m_view;
 
@@ -118,6 +122,23 @@ void RenderScene::paintGL() noexcept
 
   m_aaDirty = false;
   m_flip = !m_flip;
+
+  //Calculate fps
+  auto now = std::chrono::high_resolution_clock::now();
+  int elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(now - m_startTime).count();
+  static bool sp = true;
+  if (elapsedSeconds % 2 == 1)
+  {
+    if (sp)
+    {
+      double fps = count / 2;
+      std::cout<<fps<<'\t'<<" FPS\n";
+      sp = false;
+      count = 0;
+    }
+  }
+  else {sp = true;}
+  count++;
 }
 
 void RenderScene::antialias(size_t _activeAAFBO)
@@ -173,10 +194,12 @@ void RenderScene::antialias(size_t _activeAAFBO)
     glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
                  1,
                  glm::value_ptr(m_jitterVector[m_jitterCounter]));
+    glUniform1f(glGetUniformLocation(shaderID, "feedback"), m_feedback);
   }
   else
   {
     glUniform2f(glGetUniformLocation(shaderID, "jitter"), 0.f, 0.f);
+    glUniform1f(glGetUniformLocation(shaderID, "feedback"), 1.f);
   }
 
   prim->draw("plane");
@@ -255,7 +278,13 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
   M = glm::mat4(1.f);
   M = glm::rotate(M, glm::pi<float>() * 0.25f, {0.f, 1.f, 0.f});
   MV = m_view * M;
-  MVP = m_VP * M;
+  glm::mat4 jitterMatrix;
+  if (m_aaOn)
+  {
+    glm::vec3 help {m_jitterVector[m_jitterCounter].x, m_jitterVector[m_jitterCounter].y, 0.f};
+    jitterMatrix = glm::translate(jitterMatrix, help);
+  }
+  MVP = jitterMatrix * m_proj * m_view * M;
   N = glm::inverse(glm::mat3(M));
 
   glUniformMatrix4fv(glGetUniformLocation(shaderID, "MV"),
@@ -274,7 +303,7 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
   glUniform1f(glGetUniformLocation(shaderID, "roughness"), 0.5f);
   glUniform1f(glGetUniformLocation(shaderID, "metallic"), 0.5f);
   glUniform1f(glGetUniformLocation(shaderID, "diffAmount"), 0.2f);
-  glUniform1f(glGetUniformLocation(shaderID, "specAmount"), 0.05f);
+  glUniform1f(glGetUniformLocation(shaderID, "specAmount"), 0.f);
   glUniform3f(glGetUniformLocation(shaderID, "materialDiff"), 1.f, 1.f, 1.f);
   glUniform3f(glGetUniformLocation(shaderID, "materialSpec"), 1.f, 1.f, 1.f);
   glUniform1f(glGetUniformLocation(shaderID, "alpha"), 1.f);
@@ -282,6 +311,18 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
   glUniform3fv(glGetUniformLocation(shaderID, "cameraPos"),
                1,
                glm::value_ptr(m_cameraPos));
+  if (m_aaOn)
+  {
+    glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
+                 1,
+                 glm::value_ptr(m_jitterVector[m_jitterCounter]));
+  }
+  else
+  {
+    glUniform2f(glGetUniformLocation(shaderID, "jitter"), 0.f, 0.f);
+  }
+
+
 
   for (auto &obj : m_arrObj)
   {
@@ -417,4 +458,12 @@ void RenderScene::updateJitter()
     m_jitterVector[i] = m_sampleVector[i] * m_jitterMagnitude * glm::vec2(500.f/m_width, 500.f/m_height);
     std::cout<<glm::to_string(m_jitterVector[i])<<'\n';
   }
+}
+
+void RenderScene::increaseFeedback(float _delta)
+{
+  m_feedback += _delta;
+  if (m_feedback > 1.f) {m_feedback = 1.f;}
+  if (m_feedback < 0.f) {m_feedback = 0.f;}
+  std::cout<<"Keeping "<<m_feedback * 100.f<<"% of the current frame and "<<(1 - m_feedback) * 100.f<<"% of the previous frame\n";
 }

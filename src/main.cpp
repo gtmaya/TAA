@@ -69,6 +69,16 @@ void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int
         r_scene.resetAA();
         break;
       }
+      case (GLFW_KEY_KP_2):
+      {
+        r_scene.increaseFeedback(-0.01f);
+        break;
+      }
+      case (GLFW_KEY_KP_8):
+      {
+        r_scene.increaseFeedback(0.01f);
+        break;
+      }
     }
   }
   r_camera.handleKey(key, action);
@@ -92,10 +102,11 @@ int main()
   glfwSetErrorCallback(error_callback);
 
   // Set our OpenGL version
+  //glfwWindowHint( GLFW_DOUBLEBUFFER, GL_FALSE );
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-  int width = 500; int height = 500;
+  int width = 1000; int height = 1000;
   GLFWwindow* window = glfwCreateWindow(width,
                                         height,
                                         "Temporal Anti Aliasing Demo",

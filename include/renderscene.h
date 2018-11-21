@@ -2,6 +2,7 @@
 #define RENDERSCENE_H
 
 #include <ngl/Obj.h>
+#include <ngl/Text.h>
 #include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -23,6 +24,7 @@ class RenderScene
     void setCameraLocation(glm::vec3 _location);
     void toggleAA();
     void resetAA();
+    void increaseFeedback(float _delta);
 
   private:
     void renderCubemap();
@@ -35,6 +37,9 @@ class RenderScene
     void updateJitter();
     bool m_isFBODirty = true;
     bool m_aaDirty = true;
+
+    std::chrono::high_resolution_clock::time_point m_startTime;
+    std::chrono::high_resolution_clock::time_point m_prevFrameTime;
 
     std::array<std::array<GLuint, 4>, 3> m_arrFBO;
 
@@ -81,7 +86,9 @@ class RenderScene
                                              glm::vec2(-1.f,  1.f)};
     std::array<glm::vec2, 4> m_jitterVector;
 
-    float m_jitterMagnitude = 0.00075f;
+//    float m_jitterMagnitude = 0.01f;
+    float m_jitterMagnitude = 0.001f;
+    float m_feedback = 0.25f;
 
     size_t m_jitterCounter = 0;
 

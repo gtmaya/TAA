@@ -15,7 +15,7 @@ out vec3 worldPos;
 out vec4 fragPosition;
 out vec3 fragNormal;
 out vec2 fragTexCoord;
-out vec4 testOut;
+out vec2 testOut;
 
 void main()
 {
@@ -25,5 +25,5 @@ void main()
   fragTexCoord = TexCoord;
   gl_Position = MVP * vec4(VertexPosition, 1.f);
   fragPosition = gl_Position;
-  gl_Position.xy += jitter.xy;
+//  gl_Position.xy += jitter.xy;
 }
