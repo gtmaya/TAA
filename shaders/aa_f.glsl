@@ -89,15 +89,13 @@ void main()
 
   if (colourHISTORY.xyz != clamp(colourHISTORY.xyz, colourMIN, colourMAX))
   {
-    //colourHISTORY.xyz = clamp(colourHISTORY.xyz, colourMIN, colourMAX);
+    colourHISTORY.xyz = clamp(colourHISTORY.xyz, colourMIN, colourMAX);
     clamped = true;
   }
 
   colourHISTORY.rgb = RGB(colourHISTORY.xyz);
 
-
-
   FragColour = feedback * colourCURRENT + (1.f - feedback) * colourHISTORY;
-  //FragColour = vec4(clamped, 0.f, 0.f, 1.f);
+  FragColour = vec4(clamped, 0.f, 0.f, 1.f);
 }
 
