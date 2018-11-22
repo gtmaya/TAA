@@ -88,6 +88,7 @@ class RenderScene
 
 //    float m_jitterMagnitude = 0.01f;
     float m_jitterMagnitude = 0.001f;
+    glm::vec2 m_pixelSizeScreenSpace;
     float m_feedback = 0.25f;
 
     size_t m_jitterCounter = 0;

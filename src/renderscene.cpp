@@ -24,6 +24,8 @@ void RenderScene::resizeGL(GLint _width, GLint _height) noexcept
   m_height = _height;
   m_ratio = m_width / float(m_height);
   m_isFBODirty = true;
+  m_pixelSizeScreenSpace.x = 1.f / m_width;
+  m_pixelSizeScreenSpace.y = 1.f / m_height;
   updateJitter();
 }
 
@@ -84,6 +86,8 @@ void RenderScene::initGL() noexcept
 
   ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
   prim->createTrianglePlane("plane",2,2,1,1,ngl::Vec3(0,1,0));
+  m_pixelSizeScreenSpace.x = 1.f / m_width;
+  m_pixelSizeScreenSpace.y = 1.f / m_height;
 }
 
 void RenderScene::paintGL() noexcept
@@ -102,9 +106,6 @@ void RenderScene::paintGL() noexcept
   size_t activeAAFBO;
   if (m_flip) {activeAAFBO = m_aaFBO1;}
   else        {activeAAFBO = m_aaFBO2;}
-
-  m_lastVP = m_VP;
-  m_VP = m_proj * m_view;
 
   //Scene
   renderScene(false, activeAAFBO);
@@ -189,18 +190,15 @@ void RenderScene::antialias(size_t _activeAAFBO)
                      1,
                      false,
                      glm::value_ptr(screenMVP));
-  if (m_aaOn)
-  {
+
+    glm::vec2 screenSpaceJitter = m_jitterVector[m_jitterCounter] * - 0.5f;
     glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
                  1,
-                 glm::value_ptr(m_jitterVector[m_jitterCounter]));
+                 glm::value_ptr(screenSpaceJitter));
     glUniform1f(glGetUniformLocation(shaderID, "feedback"), m_feedback);
-  }
-  else
-  {
-    glUniform2f(glGetUniformLocation(shaderID, "jitter"), 0.f, 0.f);
-    glUniform1f(glGetUniformLocation(shaderID, "feedback"), 1.f);
-  }
+    glUniform2fv(glGetUniformLocation(shaderID, "pixelSize"),
+                 1,
+                 glm::value_ptr(m_pixelSizeScreenSpace));
 
   prim->draw("plane");
 }
@@ -273,6 +271,8 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
   GLuint shaderID = shader->getProgramID("beckmannShader");
   shader->use("beckmannShader");
 
+  m_lastVP = m_VP;
+
   glm::mat4 M, MV, MVP;
   glm::mat3 N;
   M = glm::mat4(1.f);
@@ -284,7 +284,9 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
     glm::vec3 help {m_jitterVector[m_jitterCounter].x, m_jitterVector[m_jitterCounter].y, 0.f};
     jitterMatrix = glm::translate(jitterMatrix, help);
   }
-  MVP = jitterMatrix * m_proj * m_view * M;
+  m_VP = jitterMatrix * m_proj * m_view;
+  MVP = m_VP * M;
+  m_VP = m_proj * m_view;
   N = glm::inverse(glm::mat3(M));
 
   glUniformMatrix4fv(glGetUniformLocation(shaderID, "MV"),
@@ -313,9 +315,10 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
                glm::value_ptr(m_cameraPos));
   if (m_aaOn)
   {
+    glm::vec2 jit = m_jitterVector[m_jitterCounter] * - 0.5f;
     glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
                  1,
-                 glm::value_ptr(m_jitterVector[m_jitterCounter]));
+                 glm::value_ptr(jit));
   }
   else
   {
@@ -455,7 +458,7 @@ void RenderScene::updateJitter()
 {
   for (size_t i = 0; i < m_jitterVector.size(); i++)
   {
-    m_jitterVector[i] = m_sampleVector[i] * m_jitterMagnitude * glm::vec2(500.f/m_width, 500.f/m_height);
+    m_jitterVector[i] = m_sampleVector[i] * m_pixelSizeScreenSpace * 0.5f;
     std::cout<<glm::to_string(m_jitterVector[i])<<'\n';
   }
 }

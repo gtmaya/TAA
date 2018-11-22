@@ -142,7 +142,12 @@ int main()
              "                  ENTER\n"
              "          reset camera position\n"
              "              1 - Toggle AA\n"
-             "         2 - Reset AA accumulation\n\n\n";
+             "         2 - Reset AA accumulation\n"
+             "\n"
+             "        numpad 8 - increase feedback\n"
+             "        numpad 2 - decrease feedback\n"
+             "\n"
+             "\n";
 
   // Set the window resize callback and call it once
   glfwSetFramebufferSizeCallback(window, resize_callback);
