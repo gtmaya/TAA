@@ -35,7 +35,7 @@ vec3 sampleRender(vec2 _UV)
 
 vec3 minSample(vec2 _uvCURRENT)
 {
-  vec3 minSamp;
+  vec3 minSamp = vec3(1.f, 1.f, 1.f);
   vec3 samp[9];
   samp[0] = sampleRender(_uvCURRENT);
   samp[1] = sampleRender(_uvCURRENT + vec2( pixelSize.x, 0.f));
@@ -47,16 +47,16 @@ vec3 minSample(vec2 _uvCURRENT)
   samp[7] = sampleRender(_uvCURRENT + vec2( pixelSize.x, -pixelSize.y));
   samp[8] = sampleRender(_uvCURRENT + vec2(-pixelSize.x, -pixelSize.y));
 
-  for (int i = 0; i < 8; i++)
+  for (int i = 0; i < 9; i++)
   {
-    minSamp = min(samp[i], samp[i + 1]);
+    minSamp = min(samp[i], minSamp);
   }
   return minSamp;
 }
 
 vec3 maxSample(vec2 _uvCURRENT)
 {
-  vec3 maxSamp;
+  vec3 maxSamp = vec3(0.f, 0.f, 0.f);
   vec3 samp[9];
   samp[0] = sampleRender(_uvCURRENT);
   samp[1] = sampleRender(_uvCURRENT + vec2( pixelSize.x, 0.f));
@@ -68,9 +68,9 @@ vec3 maxSample(vec2 _uvCURRENT)
   samp[7] = sampleRender(_uvCURRENT + vec2( pixelSize.x, -pixelSize.y));
   samp[8] = sampleRender(_uvCURRENT + vec2(-pixelSize.x, -pixelSize.y));
 
-  for (int i = 0; i < 8; i++)
+  for (int i = 0; i < 9; i++)
   {
-    maxSamp = max(samp[i], samp[i + 1]);
+    maxSamp = max(samp[i], maxSamp);
   }
   return maxSamp;
 }

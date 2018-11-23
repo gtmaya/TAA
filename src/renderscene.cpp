@@ -302,11 +302,11 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
                      true,
                      glm::value_ptr(N));
 
-  glUniform1f(glGetUniformLocation(shaderID, "roughness"), 0.5f);
-  glUniform1f(glGetUniformLocation(shaderID, "metallic"), 0.5f);
-  glUniform1f(glGetUniformLocation(shaderID, "diffAmount"), 0.2f);
+  glUniform1f(glGetUniformLocation(shaderID, "roughness"), 1.f);
+  glUniform1f(glGetUniformLocation(shaderID, "metallic"), 0.9f);
+  glUniform1f(glGetUniformLocation(shaderID, "diffAmount"), 0.25f);
   glUniform1f(glGetUniformLocation(shaderID, "specAmount"), 0.f);
-  glUniform3f(glGetUniformLocation(shaderID, "materialDiff"), 1.f, 1.f, 1.f);
+  glUniform3f(glGetUniformLocation(shaderID, "materialDiff"), 1.f, 0.95f, 0.9f);
   glUniform3f(glGetUniformLocation(shaderID, "materialSpec"), 1.f, 1.f, 1.f);
   glUniform1f(glGetUniformLocation(shaderID, "alpha"), 1.f);
   glUniform1i(glGetUniformLocation(shaderID, "envMaxLOD"), 10);
