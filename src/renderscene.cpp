@@ -35,7 +35,7 @@ void RenderScene::initGL() noexcept
   glClearColor(0.f, 0.f, 0.f, 1.f);
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_MULTISAMPLE);
+  //glEnable(GL_MULTISAMPLE);
 
   m_arrObj[0].m_mesh = new ngl::Obj("models/cube.obj");
   m_arrObj[1].m_mesh = new ngl::Obj("models/gear.obj");
@@ -43,6 +43,7 @@ void RenderScene::initGL() noexcept
   m_arrObj[3].m_mesh = new ngl::Obj("models/platonic.obj");
   m_arrObj[4].m_mesh = new ngl::Obj("models/text.obj");
   m_arrObj[5].m_mesh = new ngl::Obj("models/torus.obj");
+//  m_arrObj[0].m_mesh = new ngl::Obj("models/dinomodel.obj");
 
   for (auto &i : m_arrObj)
   {
@@ -63,9 +64,9 @@ void RenderScene::initGL() noexcept
                      "shaders/beckmann_v.glsl",
                      "shaders/beckmann_f.glsl");
 
-  shader->loadShader("aaShader",
-                     "shaders/aa_v.glsl",
-                     "shaders/aa_f.glsl");
+  shader->loadShader("taaShader",
+                     "shaders/taa_v.glsl",
+                     "shaders/taa_f.glsl");
 
   shader->loadShader("blitShader",
                      "shaders/blit_v.glsl",
@@ -110,23 +111,41 @@ void RenderScene::paintGL() noexcept
   //Scene
   renderScene(false, activeAAFBO);
 
-  //AA
-  if (!m_aaDirty && m_aaOn) {antialias(activeAAFBO);}
 
-  //Blit
-  if (m_flip) {blit(m_aaFBO1, m_aaFBOColour1, m_aaColourTU1);}
-  else        {blit(m_aaFBO2, m_aaFBOColour2, m_aaColourTU2);}
+  if (m_activeAA != msaa)
+  {
+    //AA
+    if (!m_aaDirty && m_activeAA == taa) {antialias(activeAAFBO);}
 
-  //Cycle jitter
-  m_jitterCounter++;
-  if (m_jitterCounter > 3) {m_jitterCounter = 0;}
+    //Blit
+    if (m_flip)
+    {
+      blit(m_aaFBO1, m_aaFBOColour1, m_aaColourTU1);
+//      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+//      glBindFramebuffer(GL_READ_FRAMEBUFFER, m_aaFBOColour1);
+//      glDrawBuffer(GL_BACK);
+//      glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
+    else
+    {
+      blit(m_aaFBO2, m_aaFBOColour2, m_aaColourTU2);
+//      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+//      glBindFramebuffer(GL_READ_FRAMEBUFFER, m_aaFBOColour2);
+//      glDrawBuffer(GL_BACK);
+//      glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
 
-  m_aaDirty = false;
-  m_flip = !m_flip;
+    //Cycle jitter
+    m_jitterCounter++;
+    if (m_jitterCounter > (m_sampleVector.size() - 1)) {m_jitterCounter = 0;}
+
+    m_aaDirty = false;
+    m_flip = !m_flip;
+  }
 
   //Calculate fps
   auto now = std::chrono::high_resolution_clock::now();
-  int elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(now - m_startTime).count();
+  int elapsedSeconds = int(std::chrono::duration_cast<std::chrono::seconds>(now - m_startTime).count());
   static bool sp = true;
   if (elapsedSeconds % 2 == 1)
   {
@@ -152,8 +171,8 @@ void RenderScene::antialias(size_t _activeAAFBO)
   ngl::VAOPrimitives* prim = ngl::VAOPrimitives::instance();
   glm::mat4 screenMVP = glm::rotate(glm::mat4(1.0f), glm::pi<float>() * 0.5f, glm::vec3(1.0f,0.0f,0.0f));
 
-  shader->use("aaShader");
-  GLuint shaderID = shader->getProgramID("aaShader");
+  shader->use("taaShader");
+  GLuint shaderID = shader->getProgramID("taaShader");
 
   glm::mat4 inverseVPC = glm::inverse(m_VP);
 
@@ -182,6 +201,10 @@ void RenderScene::antialias(size_t _activeAAFBO)
                      1,
                      false,
                      glm::value_ptr(inverseVPC));
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "VPCURRENT"),
+                     1,
+                     false,
+                     glm::value_ptr(m_VP));
   glUniformMatrix4fv(glGetUniformLocation(shaderID, "viewProjectionHISTORY"),
                      1,
                      false,
@@ -263,8 +286,9 @@ void RenderScene::renderCubemap()
 
 void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
 {
-  if (m_aaDirty || !m_aaOn) {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_activeAAFBO][taa_fboID]);}
-  else                      {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);}
+  if (m_aaDirty || m_activeAA == none) {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_activeAAFBO][taa_fboID]);}
+  else if (m_activeAA == taa)          {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);}
+  else                                 {glBindFramebuffer(GL_FRAMEBUFFER, 0);}
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
   ngl::ShaderLib* shader = ngl::ShaderLib::instance();
@@ -279,7 +303,7 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
   M = glm::rotate(M, glm::pi<float>() * 0.25f, {0.f, 1.f, 0.f});
   MV = m_view * M;
   glm::mat4 jitterMatrix;
-  if (m_aaOn)
+  if (m_activeAA == taa)
   {
     glm::vec3 help {m_jitterVector[m_jitterCounter].x, m_jitterVector[m_jitterCounter].y, 0.f};
     jitterMatrix = glm::translate(jitterMatrix, help);
@@ -313,7 +337,7 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
   glUniform3fv(glGetUniformLocation(shaderID, "cameraPos"),
                1,
                glm::value_ptr(m_cameraPos));
-  if (m_aaOn)
+  if (m_activeAA == taa)
   {
     glm::vec2 jit = m_jitterVector[m_jitterCounter] * - 0.5f;
     glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
@@ -356,12 +380,12 @@ void RenderScene::setCameraLocation(glm::vec3 _location)
   m_cameraPos = _location;
 }
 
-void RenderScene::toggleAA()
+void RenderScene::setAAMethod(int _method)
 {
-  m_aaOn = !m_aaOn;
+  m_activeAA = _method;
 }
 
-void RenderScene::resetAA()
+void RenderScene::resetTAA()
 {
   m_aaDirty = true;
 }
@@ -430,7 +454,7 @@ void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   glGenTextures(1, &m_arrFBO[_fboID][taa_fboTextureID]);
   glActiveTexture(_textureA);
   glBindTexture(GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboTextureID]);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -456,11 +480,7 @@ void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
 
 void RenderScene::updateJitter()
 {
-  for (size_t i = 0; i < m_jitterVector.size(); i++)
-  {
-    m_jitterVector[i] = m_sampleVector[i] * m_pixelSizeScreenSpace * 0.5f;
-    std::cout<<glm::to_string(m_jitterVector[i])<<'\n';
-  }
+  for (size_t i = 0; i < m_jitterVector.size(); i++){m_jitterVector[i] = m_sampleVector[i] * m_pixelSizeScreenSpace * 1.f; std::cout<<glm::to_string(m_jitterVector[i])<<'\n';}
 }
 
 void RenderScene::increaseFeedback(float _delta)

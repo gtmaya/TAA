@@ -22,9 +22,10 @@ class RenderScene
     void setProjMatrix(glm::mat4 _proj);
     void setCubeMatrix(glm::mat4 _cube);
     void setCameraLocation(glm::vec3 _location);
-    void toggleAA();
-    void resetAA();
+    void setAAMethod(int _method);
+    void resetTAA();
     void increaseFeedback(float _delta);
+    enum m_aaMethod{taa, msaa, none};
 
   private:
     void renderCubemap();
@@ -78,23 +79,43 @@ class RenderScene
     glm::mat4 m_lastVP;
     glm::mat4 m_cube;
 
-    std::array<ObjHandler, 6> m_arrObj;
+    std::array<ObjHandler, 5> m_arrObj;
 
-    std::array<glm::vec2, 4> m_sampleVector {glm::vec2( 1.f,  1.f),
-                                             glm::vec2( 1.f, -1.f),
-                                             glm::vec2(-1.f, -1.f),
-                                             glm::vec2(-1.f,  1.f)};
-    std::array<glm::vec2, 4> m_jitterVector;
+//    std::array<glm::vec2, 4> m_sampleVector {glm::vec2( 1.f,  1.f),
+//                                             glm::vec2( 1.f, -1.f),
+//                                             glm::vec2(-1.f, -1.f),
+//                                             glm::vec2(-1.f,  1.f)};
 
-//    float m_jitterMagnitude = 0.01f;
-    float m_jitterMagnitude = 0.001f;
+    std::array<glm::vec2, 16> m_sampleVector
+    {
+      glm::vec2(0.0f, -0.333333333333f),
+      glm::vec2(-0.5f, 0.333333333333f),
+      glm::vec2(0.5f, -0.777777777778f),
+      glm::vec2(-0.75f, -0.111111111111f),
+      glm::vec2(0.25f, 0.555555555556f),
+      glm::vec2(-0.25f, -0.555555555556f),
+      glm::vec2(0.75f, 0.111111111111f),
+      glm::vec2(-0.875f, 0.777777777778f),
+      glm::vec2(0.125f, -0.925925925926f),
+      glm::vec2(-0.375f, -0.259259259259f),
+      glm::vec2(0.625f, 0.407407407407f),
+      glm::vec2(-0.625f, -0.703703703704f),
+      glm::vec2(0.375f, -0.037037037037f),
+      glm::vec2(-0.125f, 0.62962962963f),
+      glm::vec2(0.875f, -0.481481481481f)
+    };
+
+    std::array<glm::vec2, 16> m_jitterVector;
+
     glm::vec2 m_pixelSizeScreenSpace;
     float m_feedback = 0.25f;
 
     size_t m_jitterCounter = 0;
 
     bool m_flip = true;
-    bool m_aaOn = true;
+    bool m_taaOn = true;
+
+    int m_activeAA = taa;
 
     std::array<glm::vec3, 14> m_lightPos = {glm::vec3( 1.506f, 0.815f, 0.041f),
                                             glm::vec3( 0.079f, 0.609f,-1.026f),

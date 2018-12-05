@@ -56,17 +56,22 @@ void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int
       case (GLFW_KEY_ENTER):
       {
         r_camera.reset();
-        r_scene.resetAA();
+        r_scene.resetTAA();
         break;
       }
       case (GLFW_KEY_1):
       {
-        r_scene.toggleAA();
+        r_scene.setAAMethod(RenderScene::taa);
         break;
       }
       case (GLFW_KEY_2):
       {
-        r_scene.resetAA();
+        r_scene.setAAMethod(RenderScene::none);
+        break;
+      }
+      case (GLFW_KEY_3):
+      {
+        r_scene.setAAMethod(RenderScene::msaa);
         break;
       }
       case (GLFW_KEY_KP_2):
@@ -102,7 +107,8 @@ int main()
   glfwSetErrorCallback(error_callback);
 
   // Set our OpenGL version
-  //glfwWindowHint( GLFW_DOUBLEBUFFER, GL_FALSE );
+//  glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
+//  glfwWindowHint(GLFW_SAMPLES, 8);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
@@ -112,6 +118,7 @@ int main()
                                         "Temporal Anti Aliasing Demo",
                                         nullptr,
                                         nullptr);
+
 
   if (window == nullptr)
   {
