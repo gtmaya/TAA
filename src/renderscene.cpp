@@ -35,7 +35,7 @@ void RenderScene::initGL() noexcept
   glClearColor(0.f, 0.f, 0.f, 1.f);
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_DEPTH_TEST);
-  //glEnable(GL_MULTISAMPLE);
+  glEnable(GL_MULTISAMPLE);
 
   m_arrObj[0].m_mesh = new ngl::Obj("models/cube.obj");
   m_arrObj[1].m_mesh = new ngl::Obj("models/gear.obj");
@@ -454,14 +454,14 @@ void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   glGenTextures(1, &m_arrFBO[_fboID][taa_fboTextureID]);
   glActiveTexture(_textureA);
   glBindTexture(GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboTextureID]);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   glGenTextures(1, &m_arrFBO[_fboID][taa_fboDepthID]);
   glActiveTexture(_textureB);
   glBindTexture(GL_TEXTURE_2D, m_arrFBO[_fboID][taa_fboDepthID]);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 

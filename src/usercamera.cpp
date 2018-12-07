@@ -11,7 +11,7 @@ UserCamera::UserCamera() : m_position (2.525f, 0.119f, -0.888f),
                            m_fovy(glm::pi<float>() * 0.25f),
                            m_aspect (float(m_width) / float(m_height)),
                            m_zNear (0.1f),
-                           m_zFar (1000.f),
+                           m_zFar (50.f),
                            m_mousePos (NULL, NULL)
 {
   update();
@@ -19,8 +19,8 @@ UserCamera::UserCamera() : m_position (2.525f, 0.119f, -0.888f),
 
 void UserCamera::reset()
 {
-  m_position = {5.5f, 4.f, 16.25f};
-  m_rotation = {5.25f, -0.132f};
+  m_position = {2.525f, 0.119f, -0.888f};
+  m_rotation = {0.238f, -0.024f};
   m_velocity = {0.f, 0.f, 0.f};
   m_acceleration = {0.f, 0.f, 0.f};
   m_target = {-1.f, 0.f, 0.f};

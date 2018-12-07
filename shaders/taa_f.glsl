@@ -149,27 +149,18 @@ void main()
 
   worldSpacePosition /= worldSpacePosition.w;
 
+  //vec4 screenSpaceHISTORY = viewProjectionHISTORY * worldSpacePosition;
   vec4 screenSpaceHISTORY = viewProjectionHISTORY * worldSpacePosition;
   vec2 uvHISTORY = 0.5 * (screenSpaceHISTORY.xy / screenSpaceHISTORY.w) + 0.5;
   vec4 colourHISTORY = texture(colourANTIALIASED, vec2(uvHISTORY));
 
-  vec3 clippedColour = colourHISTORY.rgb * FragColour.a + clipNeighbourhood(colourHISTORY.rgb, uvCURRENT - jitter) * (1 - FragColour.a);
+  vec3 colourHISTORYCLIPPED = clipNeighbourhood(colourHISTORY.rgb, uvCURRENT - jitter);
 
-  if (clamped)
-  {
-    //If the fragment has been recently clamped,
-    FragColour.a = 1.f;
-    float clipFactor = 1.f - colourHISTORY.a; //If it's recently been clipped, keep
-//    colourHISTORY.rgb = mix(colourHISTORY.rgb, clippedColour, clipFactor);
-    colourHISTORY.rgb = clippedColour;
-  }
-  else
-  {
-    //Not clamped this frame, reduce how recent the clamp is
-    FragColour.a = colourHISTORY.a * 0.f;
-  }
+  float uvDIFF = abs(length(uvCURRENT) - length(uvHISTORY));
 
-  FragColour.rgb = (feedback * colourCURRENT + (1.f - feedback) * colourHISTORY).rgb;
+  FragColour.rgb = (feedback * colourCURRENT.rgb + (1.f - feedback) * colourHISTORYCLIPPED);
+  //FragColour.a = float(uvDIFF * 1000000.f);
+//  FragColour.a = float(clamped);
 }
 
 
