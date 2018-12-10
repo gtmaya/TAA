@@ -1,6 +1,7 @@
 #ifndef SHADERHANDLER_H
 #define SHADERHANDLER_H
 
+#include <ngl/Types.h>
 #include <glm/glm.hpp>
 
 struct ShaderProps
@@ -10,7 +11,9 @@ struct ShaderProps
               float _roughness,
               float _metallic,
               float _diffuseWeight,
-              float _specularWeight);
+              float _specularWeight,
+              float _alpha,
+              int _texture);
 
   ~ShaderProps();
   glm::vec3 m_diffuseColour;
@@ -19,6 +22,8 @@ struct ShaderProps
   float m_metallic;
   float m_diffuseWeight;
   float m_specularWeight;
+  float m_alpha;
+  GLuint m_diffuseTex;
 };
 
 #endif

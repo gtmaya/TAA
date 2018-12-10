@@ -149,18 +149,24 @@ void main()
 
   worldSpacePosition /= worldSpacePosition.w;
 
-  //vec4 screenSpaceHISTORY = viewProjectionHISTORY * worldSpacePosition;
   vec4 screenSpaceHISTORY = viewProjectionHISTORY * worldSpacePosition;
   vec2 uvHISTORY = 0.5 * (screenSpaceHISTORY.xy / screenSpaceHISTORY.w) + 0.5;
   vec4 colourHISTORY = texture(colourANTIALIASED, vec2(uvHISTORY));
 
   vec3 colourHISTORYCLIPPED = clipNeighbourhood(colourHISTORY.rgb, uvCURRENT - jitter);
 
-  float uvDIFF = abs(length(uvCURRENT) - length(uvHISTORY));
+  if (clamped)
+  {
+    FragColour.a = colourHISTORY.a + 0.01f;
+  }
+  else
+  {
+    FragColour.a = colourHISTORY.a - 0.01f;
+  }
+  FragColour.a = clamp(FragColour.a, 0.f, 1.f);
 
-  FragColour.rgb = (feedback * colourCURRENT.rgb + (1.f - feedback) * colourHISTORYCLIPPED);
-  //FragColour.a = float(uvDIFF * 1000000.f);
-//  FragColour.a = float(clamped);
+
+  FragColour.rgb = mix(colourHISTORYCLIPPED, colourCURRENT.rgb, clamp(feedback - FragColour.a, 0.f, 1.f));
 }
 
 

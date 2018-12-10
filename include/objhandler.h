@@ -8,7 +8,7 @@ struct ObjHandler
 {
     ObjHandler();
     ~ObjHandler();
-    ngl::Obj *m_mesh;
+    ngl::Obj* m_mesh;
     ShaderProps m_shaderProps;
 };
 

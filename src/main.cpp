@@ -107,7 +107,7 @@ int main()
   glfwSetErrorCallback(error_callback);
 
   // Set our OpenGL version
-  glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
+  //glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
   //glfwWindowHint(GLFW_SAMPLES, 16);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);

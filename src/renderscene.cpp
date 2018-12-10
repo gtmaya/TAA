@@ -38,12 +38,13 @@ void RenderScene::initGL() noexcept
   glEnable(GL_MULTISAMPLE);
 
   m_arrObj[0].m_mesh = new ngl::Obj("models/cube.obj");
+  m_arrObj[0].m_shaderProps.m_diffuseTex = taa_dirt;
   m_arrObj[1].m_mesh = new ngl::Obj("models/gear.obj");
   m_arrObj[2].m_mesh = new ngl::Obj("models/plane.obj");
+  m_arrObj[2].m_shaderProps.m_diffuseTex = taa_checkerboard;
   m_arrObj[3].m_mesh = new ngl::Obj("models/platonic.obj");
   m_arrObj[4].m_mesh = new ngl::Obj("models/text.obj");
   m_arrObj[5].m_mesh = new ngl::Obj("models/torus.obj");
-//  m_arrObj[0].m_mesh = new ngl::Obj("models/dinomodel.obj");
 
   for (auto &i : m_arrObj)
   {
@@ -73,6 +74,8 @@ void RenderScene::initGL() noexcept
                      "shaders/blit_f.glsl");
 
   initEnvironment();
+  initTexture(taa_checkerboard, m_checkerboardTex, "images/checkerboard.jpg");
+  initTexture(taa_dirt, m_dirtTex, "images/dirt.jpg");
 
   shader->use("beckmannShader");
   GLuint shaderID = shader->getProgramID("beckmannShader");
@@ -109,7 +112,7 @@ void RenderScene::paintGL() noexcept
   else        {activeAAFBO = m_aaFBO2;}
 
   //Scene
-  renderScene(false, activeAAFBO);
+  renderScene(activeAAFBO);
 
 
   if (m_activeAA != msaa)
@@ -253,38 +256,7 @@ void RenderScene::blit(size_t _fbo, GLenum _texture, int _textureUnit)
   //glBindTexture(GL_TEXTURE_2D, 0); //not sure why this is here
 }
 
-void RenderScene::renderCubemap()
-{
-  glm::mat4 cubeM, cubeMV, cubeMVP;
-  glm::mat3 cubeN;
-
-  ngl::ShaderLib* shader = ngl::ShaderLib::instance();
-  GLuint shaderID = shader->getProgramID("environmentShader");
-  shader->use("environmentShader");
-
-  cubeM = glm::mat4(1.f);
-  cubeM = glm::scale(cubeM, glm::vec3(200.f, 200.f, 200.f));
-  cubeMV = m_cube * cubeM;
-  cubeMVP = m_proj * cubeMV;
-  cubeN = glm::inverse(glm::mat3(cubeM));
-
-  glUniformMatrix4fv(glGetUniformLocation(shaderID, "MVP"),
-                     1,
-                     false,
-                     glm::value_ptr(cubeMVP));
-  glUniformMatrix4fv(glGetUniformLocation(shaderID, "MV"),
-                     1,
-                     false,
-                     glm::value_ptr(cubeMV));
-  glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
-               1,
-               glm::value_ptr(m_sampleVector[m_jitterCounter]));
-
-  ngl::VAOPrimitives* prim = ngl::VAOPrimitives::instance();
-  prim->draw("cube");
-}
-
-void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
+void RenderScene::renderScene(size_t _activeAAFBO)
 {
   if (m_aaDirty || m_activeAA == none) {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_activeAAFBO][taa_fboID]);}
   else if (m_activeAA == taa)          {glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);}
@@ -325,14 +297,6 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
                      1,
                      true,
                      glm::value_ptr(N));
-
-  glUniform1f(glGetUniformLocation(shaderID, "roughness"), 1.f);
-  glUniform1f(glGetUniformLocation(shaderID, "metallic"), 0.9f);
-  glUniform1f(glGetUniformLocation(shaderID, "diffAmount"), 0.25f);
-  glUniform1f(glGetUniformLocation(shaderID, "specAmount"), 0.f);
-  glUniform3f(glGetUniformLocation(shaderID, "materialDiff"), 1.f, 0.95f, 0.9f);
-  glUniform3f(glGetUniformLocation(shaderID, "materialSpec"), 1.f, 1.f, 1.f);
-  glUniform1f(glGetUniformLocation(shaderID, "alpha"), 1.f);
   glUniform1i(glGetUniformLocation(shaderID, "envMaxLOD"), 10);
   glUniform3fv(glGetUniformLocation(shaderID, "cameraPos"),
                1,
@@ -353,9 +317,33 @@ void RenderScene::renderScene(bool _cubemap, size_t _activeAAFBO)
 
   for (auto &obj : m_arrObj)
   {
+    glUniform1f(glGetUniformLocation(shaderID, "roughness"), obj.m_shaderProps.m_roughness);
+    glUniform1f(glGetUniformLocation(shaderID, "metallic"), obj.m_shaderProps.m_metallic);
+    glUniform1f(glGetUniformLocation(shaderID, "diffAmount"), obj.m_shaderProps.m_diffuseWeight);
+    glUniform1f(glGetUniformLocation(shaderID, "specAmount"), obj.m_shaderProps.m_specularWeight);
+    glUniform3fv(glGetUniformLocation(shaderID, "materialDiff"),
+                 1,
+                 glm::value_ptr(obj.m_shaderProps.m_diffuseColour));
+    glUniform3fv(glGetUniformLocation(shaderID, "materialSpec"),
+                 1,
+                 glm::value_ptr(obj.m_shaderProps.m_specularColour));
+    glUniform1f(glGetUniformLocation(shaderID, "alpha"), obj.m_shaderProps.m_alpha);
+    if (obj.m_shaderProps.m_diffuseTex == taa_checkerboard)
+    {
+      glUniform1i(glGetUniformLocation(shaderID, "hasDiffMap"), 1);
+      glUniform1i(glGetUniformLocation(shaderID, "diffuseMap"), taa_checkerboard);
+    }
+    else if (obj.m_shaderProps.m_diffuseTex == taa_dirt)
+    {
+      glUniform1i(glGetUniformLocation(shaderID, "hasDiffMap"), 1);
+      glUniform1i(glGetUniformLocation(shaderID, "diffuseMap"), taa_dirt);
+    }
+    else
+    {
+      glUniform1i(glGetUniformLocation(shaderID, "hasDiffMap"), 0);
+    }
     obj.m_mesh->draw();
   }
-  if (_cubemap) {renderCubemap();}
 }
 
 void RenderScene::setViewMatrix(glm::mat4 _view)
@@ -476,6 +464,32 @@ void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {std::cout<<"Help\n";}
+}
+
+void RenderScene::initTexture(const GLuint& texUnit, GLuint &texId, const char *filename)
+{
+    glActiveTexture(GL_TEXTURE0 + texUnit);
+
+    ngl::Image img(filename);
+
+    glGenTextures(1, &texId);
+    glBindTexture(GL_TEXTURE_2D, texId);
+
+    glTexImage2D (
+                GL_TEXTURE_2D,    // The target (in this case, which side of the cube)
+                0,                // Level of mipmap to load
+                img.format(),     // Internal format (number of colour components)
+                img.width(),      // Width in pixels
+                img.height(),     // Height in pixels
+                0,                // Border
+                img.format(),     // Format of the pixel data
+                GL_UNSIGNED_BYTE, // Data type of pixel data
+                img.getPixels()); // Pointer to image data in memory
+
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 void RenderScene::updateJitter()

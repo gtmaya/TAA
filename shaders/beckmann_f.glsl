@@ -19,15 +19,17 @@ uniform float specAmount;
 uniform vec3 materialDiff;
 uniform vec3 materialSpec;
 uniform float alpha;
+uniform sampler2D diffuseMap;
+uniform bool hasDiffMap;
 uniform vec3 cameraPos;
+uniform mat4 MV;
 
 // Vectors from the vertex shader.
-in vec3 MVSpacePos;
 in vec3 fragNormal;
 in vec4 fragPosition;
 in vec2 fragTexCoord;
 in vec3 worldPos;
-in vec2 testOut;
+in vec3 viewSpacePos;
 
 //Constants
 const float small = 0.0001f;
@@ -66,7 +68,7 @@ vec3 specularComponent(vec3 _n, vec3 _v, vec3 _s, float _roughness, vec3 _fInc)
   vec3 F = vec3(F_r, F_g, F_b);
 
   // Compute the light from the ambient, diffuse and specular components
-  return F * D / NdotV;
+  return F * D /*/ NdotV*/;
 }
 
 void main()
@@ -77,7 +79,7 @@ void main()
 
   vec3 p = fragPosition.xyz / fragPosition.w;
   vec3 lookup = (reflect(-v,n));
-  lookup.z *= -1;
+  //lookup.z *= -1;
   lookup.y *= -1;
 
   vec3 totalLight = vec3(0.f);
@@ -95,11 +97,17 @@ void main()
 
     vec3 diffuseIntensity = lightCol[i] * max(dot(s, n), 0.0);
 
-    totalLight += vec3((diffuseIntensity * diffAmount * materialDiff) +
-                   (specularIntensity * specComponent * specAmount * materialSpec));
+    vec3 materialDiffuseMap;
+    if (hasDiffMap)
+    {
+      materialDiffuseMap = texture(diffuseMap, fragTexCoord).rgb;
+    }
+    else
+    {
+      materialDiffuseMap = vec3(1.f);
+    }
+    totalLight += vec3((diffuseIntensity * diffAmount * materialDiff * materialDiffuseMap) /*
+                   (specularIntensity * specComponent * specAmount * materialSpec)*/);
   }
-
   FragColor = vec4(totalLight , alpha);
-//  FragColor = vec4(lookup, 1.f);
-//  FragColor = texture(envMap, lookup);
 }

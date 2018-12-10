@@ -28,13 +28,13 @@ class RenderScene
     enum m_aaMethod{taa, msaa, none};
 
   private:
-    void renderCubemap();
-    void renderScene(bool _cubemap, size_t _activeAAFBO);
+    void renderScene(size_t _activeAAFBO);
     void blit(size_t _fbo, GLenum _texture, int _textureUnit);
     void antialias(size_t _activeAAFBO);
     void initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB);
     void initEnvironment();
     void initEnvironmentSide(GLenum _target, const char *_filename);
+    void initTexture(const GLuint& texUnit, GLuint &texId, const char *filename);
     void updateJitter();
     bool m_isFBODirty = true;
     bool m_aaDirty = true;
@@ -44,7 +44,11 @@ class RenderScene
 
     std::array<std::array<GLuint, 4>, 3> m_arrFBO;
 
-    enum m_taaFBOIndex     {taa_fboID = 0, taa_fboTextureID, taa_fboDepthID};
+    enum m_taaFBOIndex {taa_fboID = 0, taa_fboTextureID, taa_fboDepthID};
+
+    GLuint m_checkerboardTex;
+    GLuint m_dirtTex;
+    enum m_textures {taa_none = 0, taa_checkerboard = 7, taa_dirt};
 
     size_t m_renderFBO = 0;
     size_t m_aaFBO1    = 1;
@@ -80,11 +84,6 @@ class RenderScene
     glm::mat4 m_cube;
 
     std::array<ObjHandler, 5> m_arrObj;
-
-//    std::array<glm::vec2, 4> m_sampleVector {glm::vec2( 1.f,  1.f),
-//                                             glm::vec2( 1.f, -1.f),
-//                                             glm::vec2(-1.f, -1.f),
-//                                             glm::vec2(-1.f,  1.f)};
 
     std::array<glm::vec2, 16> m_sampleVector
     {

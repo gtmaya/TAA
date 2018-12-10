@@ -10,6 +10,6 @@ in vec2 FragmentUV;
 void main()
 {
   vec2 uv = gl_FragCoord.xy / windowSize;
-  FragColour = texture(inputTex, uv);
+  FragColour = texture(inputTex, uv).aaaa;
 }
 
