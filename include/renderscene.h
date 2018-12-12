@@ -83,7 +83,7 @@ class RenderScene
     glm::mat4 m_lastVP;
     glm::mat4 m_cube;
 
-    std::array<ObjHandler, 5> m_arrObj;
+    std::array<ObjHandler, 1> m_arrObj;
 
     std::array<glm::vec2, 16> m_sampleVector
     {

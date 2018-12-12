@@ -32,19 +32,16 @@ void RenderScene::resizeGL(GLint _width, GLint _height) noexcept
 void RenderScene::initGL() noexcept
 {
   ngl::NGLInit::instance();
-  glClearColor(0.f, 0.f, 0.f, 1.f);
+  glClearColor(0.8f, 0.8f, 0.8f, 1.f);
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_MULTISAMPLE);
 
-  m_arrObj[0].m_mesh = new ngl::Obj("models/cube.obj");
+  m_arrObj[0].m_mesh = new ngl::Obj("models/map.obj");
   m_arrObj[0].m_shaderProps.m_diffuseTex = taa_dirt;
-  m_arrObj[1].m_mesh = new ngl::Obj("models/gear.obj");
-  m_arrObj[2].m_mesh = new ngl::Obj("models/plane.obj");
-  m_arrObj[2].m_shaderProps.m_diffuseTex = taa_checkerboard;
-  m_arrObj[3].m_mesh = new ngl::Obj("models/platonic.obj");
-  m_arrObj[4].m_mesh = new ngl::Obj("models/text.obj");
-  m_arrObj[5].m_mesh = new ngl::Obj("models/torus.obj");
+  m_arrObj[0].m_shaderProps.m_diffuseWeight = 0.25f;
+  m_arrObj[0].m_shaderProps.m_specularWeight = 0.25f;
+  m_arrObj[0].m_shaderProps.m_roughness = 1.f;
 
   for (auto &i : m_arrObj)
   {
@@ -149,18 +146,18 @@ void RenderScene::paintGL() noexcept
   //Calculate fps
   auto now = std::chrono::high_resolution_clock::now();
   int elapsedSeconds = int(std::chrono::duration_cast<std::chrono::seconds>(now - m_startTime).count());
-  static bool sp = true;
+  static bool startSecond = true;
   if (elapsedSeconds % 2 == 1)
   {
-    if (sp)
+    if (startSecond)
     {
-      double fps = count / 2;
+      double fps = count / 2.0;
       std::cout<<fps<<'\t'<<" FPS\n";
-      sp = false;
+      startSecond = false;
       count = 0;
     }
   }
-  else {sp = true;}
+  else {startSecond = true;}
   count++;
 }
 
@@ -197,7 +194,7 @@ void RenderScene::antialias(size_t _activeAAFBO)
 
   glUniform1i(glGetUniformLocation(shaderID, "colourRENDER"),       m_renderColourTU);
   glUniform1i(glGetUniformLocation(shaderID, "depthRENDER"),        m_renderDepthTU);
-  if (_activeAAFBO == m_aaFBO1) {glUniform1i(glGetUniformLocation(shaderID, "colourANTIALIASED"),  m_aaColourTU2);} //Bind the inactive aaFBO
+  if (_activeAAFBO == m_aaFBO1) {glUniform1i(glGetUniformLocation(shaderID, "colourANTIALIASED"),  m_aaColourTU2);}
   else                          {glUniform1i(glGetUniformLocation(shaderID, "colourANTIALIASED"),  m_aaColourTU1);}
   glUniform2f(glGetUniformLocation(shaderID, "windowSize"),         m_width, m_height);
   glUniformMatrix4fv(glGetUniformLocation(shaderID, "inverseViewProjectionCURRENT"),
@@ -216,16 +213,14 @@ void RenderScene::antialias(size_t _activeAAFBO)
                      1,
                      false,
                      glm::value_ptr(screenMVP));
-
-    glm::vec2 screenSpaceJitter = m_jitterVector[m_jitterCounter] * - 0.5f;
-    glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
-                 1,
-                 glm::value_ptr(screenSpaceJitter));
-    glUniform1f(glGetUniformLocation(shaderID, "feedback"), m_feedback);
-    glUniform2fv(glGetUniformLocation(shaderID, "pixelSize"),
-                 1,
-                 glm::value_ptr(m_pixelSizeScreenSpace));
-
+  glm::vec2 screenSpaceJitter = m_jitterVector[m_jitterCounter] * - 0.5f;
+  glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
+               1,
+               glm::value_ptr(screenSpaceJitter));
+  glUniform1f(glGetUniformLocation(shaderID, "feedback"), m_feedback);
+  glUniform2fv(glGetUniformLocation(shaderID, "pixelSize"),
+               1,
+               glm::value_ptr(m_pixelSizeScreenSpace));
   prim->draw("plane");
 }
 
@@ -251,9 +246,7 @@ void RenderScene::blit(size_t _fbo, GLenum _texture, int _textureUnit)
                      1,
                      false,
                      glm::value_ptr(screenMVP));
-
   prim->draw("plane");
-  //glBindTexture(GL_TEXTURE_2D, 0); //not sure why this is here
 }
 
 void RenderScene::renderScene(size_t _activeAAFBO)
@@ -268,7 +261,6 @@ void RenderScene::renderScene(size_t _activeAAFBO)
   shader->use("beckmannShader");
 
   m_lastVP = m_VP;
-
   glm::mat4 M, MV, MVP;
   glm::mat3 N;
   M = glm::mat4(1.f);
@@ -280,8 +272,11 @@ void RenderScene::renderScene(size_t _activeAAFBO)
     glm::vec3 help {m_jitterVector[m_jitterCounter].x, m_jitterVector[m_jitterCounter].y, 0.f};
     jitterMatrix = glm::translate(jitterMatrix, help);
   }
+  //Jitter the VP
   m_VP = jitterMatrix * m_proj * m_view;
+  //Use it to calculate the jittered MVP
   MVP = m_VP * M;
+  //Remove the jitter
   m_VP = m_proj * m_view;
   N = glm::inverse(glm::mat3(M));
 
@@ -297,7 +292,7 @@ void RenderScene::renderScene(size_t _activeAAFBO)
                      1,
                      true,
                      glm::value_ptr(N));
-  glUniform1i(glGetUniformLocation(shaderID, "envMaxLOD"), 10);
+  glUniform1i(glGetUniformLocation(shaderID, "envMapMaxLod"), 10);
   glUniform3fv(glGetUniformLocation(shaderID, "cameraPos"),
                1,
                glm::value_ptr(m_cameraPos));
@@ -312,8 +307,6 @@ void RenderScene::renderScene(size_t _activeAAFBO)
   {
     glUniform2f(glGetUniformLocation(shaderID, "jitter"), 0.f, 0.f);
   }
-
-
 
   for (auto &obj : m_arrObj)
   {
@@ -445,6 +438,8 @@ void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
   glGenTextures(1, &m_arrFBO[_fboID][taa_fboDepthID]);
   glActiveTexture(_textureB);
@@ -452,6 +447,8 @@ void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
   glGenFramebuffers(1, &m_arrFBO[_fboID][taa_fboID]);
   glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_fboID][taa_fboID]);
@@ -476,15 +473,15 @@ void RenderScene::initTexture(const GLuint& texUnit, GLuint &texId, const char *
     glBindTexture(GL_TEXTURE_2D, texId);
 
     glTexImage2D (
-                GL_TEXTURE_2D,    // The target (in this case, which side of the cube)
-                0,                // Level of mipmap to load
-                img.format(),     // Internal format (number of colour components)
-                img.width(),      // Width in pixels
-                img.height(),     // Height in pixels
-                0,                // Border
-                img.format(),     // Format of the pixel data
-                GL_UNSIGNED_BYTE, // Data type of pixel data
-                img.getPixels()); // Pointer to image data in memory
+                GL_TEXTURE_2D,
+                0,
+                int(img.format()),
+                int(img.width()),
+                int(img.height()),
+                0,
+                img.format(),
+                GL_UNSIGNED_BYTE,
+                img.getPixels());
 
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -494,7 +491,7 @@ void RenderScene::initTexture(const GLuint& texUnit, GLuint &texId, const char *
 
 void RenderScene::updateJitter()
 {
-  for (size_t i = 0; i < m_jitterVector.size(); i++){m_jitterVector[i] = m_sampleVector[i] * m_pixelSizeScreenSpace * 1.f; std::cout<<glm::to_string(m_jitterVector[i])<<'\n';}
+  for (size_t i = 0; i < m_jitterVector.size(); i++){m_jitterVector[i] = m_sampleVector[i] * m_pixelSizeScreenSpace * 0.9f; std::cout<<glm::to_string(m_jitterVector[i])<<'\n';}
 }
 
 void RenderScene::increaseFeedback(float _delta)

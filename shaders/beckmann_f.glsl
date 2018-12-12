@@ -84,6 +84,16 @@ void main()
 
   vec3 totalLight = vec3(0.f);
 
+  vec3 materialDiffuseMap;
+  if (hasDiffMap)
+  {
+    materialDiffuseMap = texture(diffuseMap, fragTexCoord).rgb;
+  }
+  else
+  {
+    materialDiffuseMap = vec3(1.f);
+  }
+
   for(int i = 0; i < 14; i++)
   {
     vec3 transformedLightPos = lightPos[i] * 100.f;
@@ -96,18 +106,8 @@ void main()
     vec3 specularIntensity = textureLod(envMap, lookup, roughness * envMapMaxLod).rgb;
 
     vec3 diffuseIntensity = lightCol[i] * max(dot(s, n), 0.0);
-
-    vec3 materialDiffuseMap;
-    if (hasDiffMap)
-    {
-      materialDiffuseMap = texture(diffuseMap, fragTexCoord).rgb;
-    }
-    else
-    {
-      materialDiffuseMap = vec3(1.f);
-    }
-    totalLight += vec3((diffuseIntensity * diffAmount * materialDiff * materialDiffuseMap) /*
-                   (specularIntensity * specComponent * specAmount * materialSpec)*/);
+    totalLight += vec3((diffuseIntensity * diffAmount * materialDiff * materialDiffuseMap) +
+                   (specularIntensity * specComponent * specAmount * materialSpec));
   }
   FragColor = vec4(totalLight , alpha);
 }

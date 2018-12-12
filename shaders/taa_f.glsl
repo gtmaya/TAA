@@ -153,20 +153,16 @@ void main()
   vec2 uvHISTORY = 0.5 * (screenSpaceHISTORY.xy / screenSpaceHISTORY.w) + 0.5;
   vec4 colourHISTORY = texture(colourANTIALIASED, vec2(uvHISTORY));
 
-  vec3 colourHISTORYCLIPPED = clipNeighbourhood(colourHISTORY.rgb, uvCURRENT - jitter);
+  vec3 colourHISTORYCLIPPED = clipNeighbourhood(colourHISTORY.rgb, uvCURRENT);
+  //vec3 colourHISTORYCLIPPED = colourHISTORY.rgb;
 
-  if (clamped)
-  {
-    FragColour.a = colourHISTORY.a + 0.01f;
-  }
-  else
-  {
-    FragColour.a = colourHISTORY.a - 0.01f;
-  }
-  FragColour.a = clamp(FragColour.a, 0.f, 1.f);
+  if (colourHISTORY.a == 0.f) {FragColour.a = float(clamped);}
+  else {FragColour.a = mix(colourHISTORY.a, float(clamped), feedback);}
 
+  float clipBlendFactor = colourHISTORY.a;
+  vec3 colourHISTORYCLIPPEDBLEND = mix(colourHISTORY.rgb, colourHISTORYCLIPPED, clamp(clipBlendFactor * 1.f, 0.f, 1.f));
 
-  FragColour.rgb = mix(colourHISTORYCLIPPED, colourCURRENT.rgb, clamp(feedback - FragColour.a, 0.f, 1.f));
+  FragColour.rgb = mix(colourHISTORYCLIPPEDBLEND, colourCURRENT.rgb, feedback);
 }
 
 

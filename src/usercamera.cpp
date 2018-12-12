@@ -1,8 +1,8 @@
 #include "usercamera.h"
 #include <glm/gtx/string_cast.hpp>
 
-UserCamera::UserCamera() : m_position (2.525f, 0.119f, -0.888f),
-                           m_rotation (0.238f, -0.024f),
+UserCamera::UserCamera() : m_position (-17.543415, 5.733370, 22.232615),
+                           m_rotation (4.285187, -0.210000),
                            m_velocity (0.f, 0.f, 0.f),
                            m_acceleration (0.f, 0.f, 0.f),
                            m_target (-1.f, 0.f, 0.f),
@@ -11,7 +11,7 @@ UserCamera::UserCamera() : m_position (2.525f, 0.119f, -0.888f),
                            m_fovy(glm::pi<float>() * 0.25f),
                            m_aspect (float(m_width) / float(m_height)),
                            m_zNear (0.1f),
-                           m_zFar (50.f),
+                           m_zFar (80.f),
                            m_mousePos (NULL, NULL)
 {
   update();
@@ -19,8 +19,8 @@ UserCamera::UserCamera() : m_position (2.525f, 0.119f, -0.888f),
 
 void UserCamera::reset()
 {
-  m_position = {2.525f, 0.119f, -0.888f};
-  m_rotation = {0.238f, -0.024f};
+  m_position = {-17.543415, 5.733370, 22.232615};
+  m_rotation = {4.285187, -0.210000};
   m_velocity = {0.f, 0.f, 0.f};
   m_acceleration = {0.f, 0.f, 0.f};
   m_target = {-1.f, 0.f, 0.f};
@@ -183,6 +183,9 @@ void UserCamera::update()
   m_view = glm::lookAt(m_position, glm::vec3(m_target), glm::vec3(0.0f,1.0f,0.0f));
   m_proj = glm::perspective(m_fovy, m_aspect, m_zNear, m_zFar);
   m_cube = glm::lookAt({0.f, 0.f, 0.f}, m_target - m_position, {0.f, 1.f, 0.f});
+
+
+  std::cout<<glm::to_string(m_position)<<'\n'<<glm::to_string(m_rotation)<<'\n';
 }
 
 glm::mat4 UserCamera::viewMatrix() const
