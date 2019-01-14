@@ -3,6 +3,7 @@
 uniform mat4 inverseViewProjectionCURRENT;
 uniform mat4 VPCURRENT;
 uniform mat4 viewProjectionHISTORY;
+uniform sampler2D velocityBUF;
 uniform sampler2D colourRENDER;
 uniform sampler2D depthRENDER;
 uniform sampler2D colourANTIALIASED;
@@ -19,7 +20,7 @@ uniform mat3 YCoCGMatrix = mat3(0.25f, 0.5f, -0.25f, 0.5f, 0.f, 0.5f, 0.25f, -0.
 
 uniform mat3 RGBMatrix = mat3(1.f, 1.f, 1.f, 1.f, 0.f, -1.f, -1.f, 1.f, -1.f);
 
-bool clamped = false;
+bool clipped = false;
 float clipDist = 0.f;
 
 vec3 YCoCg(vec3 _inRGB)
@@ -130,7 +131,7 @@ vec3 clipNeighbourhood(vec3 _colourSample, vec2 _uvCURRENT)
   if (maximumDimension > 1.f)
   {
     vec3 clippedColour = aabbCentre + (centreToSample / maximumDimension);
-    clamped = true;
+    clipped = true;
     clipDist = maximumDimension - 1.f;
     return RGB(clippedColour);
   }
@@ -140,29 +141,39 @@ vec3 clipNeighbourhood(vec3 _colourSample, vec2 _uvCURRENT)
 void main()
 {
   vec2 uvCURRENT = gl_FragCoord.xy / windowSize;
+
+  //Get current frame data
   vec4 colourCURRENT = texture(colourRENDER, uvCURRENT - jitter);
   float depthCURRENT = texture(depthRENDER, uvCURRENT - jitter).r;
 
+  //Convert current screenspace to world space
   float z = depthCURRENT * 2.0 - 1.0;
   vec4 screenSpaceCURRENT = vec4((uvCURRENT) * 2.f - 1.f, z, 1.f);
   vec4 worldSpacePosition = inverseViewProjectionCURRENT * screenSpaceCURRENT;
-
   worldSpacePosition /= worldSpacePosition.w;
 
+  //Convert this into previous UV coords.
   vec4 screenSpaceHISTORY = viewProjectionHISTORY * worldSpacePosition;
   vec2 uvHISTORY = 0.5 * (screenSpaceHISTORY.xy / screenSpaceHISTORY.w) + 0.5;
+
+  vec2 vel = uvCURRENT - uvHISTORY;
+  vel += texture(velocityBUF, uvCURRENT - jitter).rg;
+  uvHISTORY = uvCURRENT - vel;
+
+  //Get previous frame colour
   vec4 colourHISTORY = texture(colourANTIALIASED, vec2(uvHISTORY));
 
+  //Clip it
   vec3 colourHISTORYCLIPPED = clipNeighbourhood(colourHISTORY.rgb, uvCURRENT);
-  //vec3 colourHISTORYCLIPPED = colourHISTORY.rgb;
 
-  if (colourHISTORY.a == 0.f) {FragColour.a = float(clamped);}
-  else {FragColour.a = mix(colourHISTORY.a, float(clamped), feedback);}
+  if (colourHISTORY.a == 0.f) {FragColour.a = float(clipped);} //If there's nothing, store the clipped flag (could still be nothing)
+  else {FragColour.a = mix(colourHISTORY.a, float(clipped), feedback);} //If there is something, blend the previous clipped value with the current one (using same feedback as rest of AA)
 
-  float clipBlendFactor = colourHISTORY.a;
+  float clipBlendFactor = FragColour.a;
   vec3 colourHISTORYCLIPPEDBLEND = mix(colourHISTORY.rgb, colourHISTORYCLIPPED, clamp(clipBlendFactor * 1.f, 0.f, 1.f));
 
   FragColour.rgb = mix(colourHISTORYCLIPPEDBLEND, colourCURRENT.rgb, feedback);
+  FragColour = texture(velocityBUF, uvCURRENT - jitter);
 }
 
 

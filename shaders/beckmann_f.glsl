@@ -1,7 +1,8 @@
 #version 430
 
 //FragColor
-layout (location=0) out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec3 velocity;
 
 //Light info
 uniform vec3 lightPos[14];
@@ -30,6 +31,8 @@ in vec4 fragPosition;
 in vec2 fragTexCoord;
 in vec3 worldPos;
 in vec3 viewSpacePos;
+in vec3 worldSpaceVel;
+
 
 //Constants
 const float small = 0.0001f;
@@ -110,4 +113,5 @@ void main()
                    (specularIntensity * specComponent * specAmount * materialSpec));
   }
   FragColor = vec4(totalLight , alpha);
+  velocity = worldSpaceVel.xyz;
 }

@@ -31,7 +31,8 @@ class RenderScene
     void renderScene(size_t _activeAAFBO);
     void blit(size_t _fbo, GLenum _texture, int _textureUnit);
     void antialias(size_t _activeAAFBO);
-    void initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB);
+    void initRenderFBO();
+    void initAAFBO(size_t _fboID, GLenum _textureA, GLenum _textureB);
     void initEnvironment();
     void initEnvironmentSide(GLenum _target, const char *_filename);
     void initTexture(const GLuint& texUnit, GLuint &texId, const char *filename);
@@ -44,7 +45,7 @@ class RenderScene
 
     std::array<std::array<GLuint, 4>, 3> m_arrFBO;
 
-    enum m_taaFBOIndex {taa_fboID = 0, taa_fboTextureID, taa_fboDepthID};
+    enum m_taaFBOIndex {taa_fboID = 0, taa_fboTextureID, taa_fboDepthID, taa_fboVelID};
 
     GLuint m_checkerboardTex;
     GLuint m_dirtTex;
@@ -53,19 +54,22 @@ class RenderScene
     size_t m_renderFBO = 0;
     size_t m_aaFBO1    = 1;
     size_t m_aaFBO2    = 2;
+    size_t m_velFBO    = 3;
 
     GLenum m_renderFBOColour = GL_TEXTURE1;
     int    m_renderColourTU  = 1;
     GLenum m_renderFBODepth  = GL_TEXTURE2;
     int    m_renderDepthTU   = 2;
-    GLenum m_aaFBOColour1    = GL_TEXTURE3;
-    int    m_aaColourTU1     = 3;
-    GLenum m_aaFBODepth1     = GL_TEXTURE4;
-    int    m_aaDepthTU1      = 4;
-    GLenum m_aaFBOColour2    = GL_TEXTURE5;
-    int    m_aaColourTU2     = 5;
-    GLenum m_aaFBODepth2     = GL_TEXTURE6;
-    int    m_aaDepthTU2      = 6;
+    GLenum m_renderFBOVel  = GL_TEXTURE3;
+    int    m_renderVelTU   = 3;
+    GLenum m_aaFBOColour1    = GL_TEXTURE4;
+    int    m_aaColourTU1     = 4;
+    GLenum m_aaFBODepth1     = GL_TEXTURE5;
+    int    m_aaDepthTU1      = 5;
+    GLenum m_aaFBOColour2    = GL_TEXTURE6;
+    int    m_aaColourTU2     = 6;
+    GLenum m_aaFBODepth2     = GL_TEXTURE7;
+    int    m_aaDepthTU2      = 7;
 
     GLuint m_envTex;
 

@@ -31,9 +31,7 @@ DISTFILES +=    $OTHER_FILES \
     shaders/beckmann_v.glsl \
     shaders/beckmann_f.glsl \
     shaders/taa_f.glsl \
-    shaders/taa_v.glsl \
-    shaders/msaa_f.glsl \
-    shaders/msaa_v.glsl
+    shaders/taa_v.glsl
 
 QMAKE_CXXFLAGS+=$$system(sdl2-config  --cflags)
 message(output from sdl2-config --cflags added to CXXFLAGS= $$QMAKE_CXXFLAGS)

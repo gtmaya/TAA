@@ -32,13 +32,12 @@ void RenderScene::resizeGL(GLint _width, GLint _height) noexcept
 void RenderScene::initGL() noexcept
 {
   ngl::NGLInit::instance();
-//  glClearColor(0.8f, 0.8f, 0.8f, 1.f);
-  glClearColor(0.f, 0.f, 0.f, 0.f);
+  glClearColor(0.f, 0.f, 0.f, 1.f);
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_MULTISAMPLE);
 
-  m_arrObj[0].m_mesh = new ngl::Obj("models/dino.obj");
+  m_arrObj[0].m_mesh = new ngl::Obj("models/map.obj");
   m_arrObj[0].m_shaderProps.m_diffuseTex = taa_dirt;
   m_arrObj[0].m_shaderProps.m_diffuseWeight = 0.25f;
   m_arrObj[0].m_shaderProps.m_specularWeight = 0.25f;
@@ -98,9 +97,9 @@ void RenderScene::paintGL() noexcept
   //Common stuff
   if (m_isFBODirty)
   {
-    initRenderFBO();
-    initAAFBO(m_aaFBO1, m_aaFBOColour1, m_aaFBODepth1);
-    initAAFBO(m_aaFBO2, m_aaFBOColour2, m_aaFBODepth2);
+    initFBO(m_renderFBO, m_renderFBOColour, m_renderFBODepth);
+    initFBO(m_aaFBO1, m_aaFBOColour1, m_aaFBODepth1);
+    initFBO(m_aaFBO2, m_aaFBOColour2, m_aaFBODepth2);
     m_aaDirty = true;
     m_isFBODirty = false;
   }
@@ -147,18 +146,18 @@ void RenderScene::paintGL() noexcept
   //Calculate fps
   auto now = std::chrono::high_resolution_clock::now();
   int elapsedSeconds = int(std::chrono::duration_cast<std::chrono::seconds>(now - m_startTime).count());
-  static bool startSecond = true;
+  static bool sp = true;
   if (elapsedSeconds % 2 == 1)
   {
-    if (startSecond)
+    if (sp)
     {
-      double fps = count / 2.0;
+      double fps = count / 2;
       std::cout<<fps<<'\t'<<" FPS\n";
-      startSecond = false;
+      sp = false;
       count = 0;
     }
   }
-  else {startSecond = true;}
+  else {sp = true;}
   count++;
 }
 
@@ -192,12 +191,12 @@ void RenderScene::antialias(size_t _activeAAFBO)
     glActiveTexture(m_aaFBOColour1);
     glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_aaFBO1][taa_fboTextureID]);
   }
-  glUniform1i(glGetUniformLocation(shaderID, "velocityBUF"), m_renderVelTU);
-  glUniform1i(glGetUniformLocation(shaderID, "colourRENDER"), m_renderColourTU);
-  glUniform1i(glGetUniformLocation(shaderID, "depthRENDER"), m_renderDepthTU);
-  if (_activeAAFBO == m_aaFBO1) {glUniform1i(glGetUniformLocation(shaderID, "colourANTIALIASED"),  m_aaColourTU2);}
+
+  glUniform1i(glGetUniformLocation(shaderID, "colourRENDER"),       m_renderColourTU);
+  glUniform1i(glGetUniformLocation(shaderID, "depthRENDER"),        m_renderDepthTU);
+  if (_activeAAFBO == m_aaFBO1) {glUniform1i(glGetUniformLocation(shaderID, "colourANTIALIASED"),  m_aaColourTU2);} //Bind the inactive aaFBO
   else                          {glUniform1i(glGetUniformLocation(shaderID, "colourANTIALIASED"),  m_aaColourTU1);}
-  glUniform2f(glGetUniformLocation(shaderID, "windowSize"), m_width, m_height);
+  glUniform2f(glGetUniformLocation(shaderID, "windowSize"),         m_width, m_height);
   glUniformMatrix4fv(glGetUniformLocation(shaderID, "inverseViewProjectionCURRENT"),
                      1,
                      false,
@@ -214,14 +213,16 @@ void RenderScene::antialias(size_t _activeAAFBO)
                      1,
                      false,
                      glm::value_ptr(screenMVP));
-  glm::vec2 screenSpaceJitter = m_jitterVector[m_jitterCounter] * - 0.5f;
-  glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
-               1,
-               glm::value_ptr(screenSpaceJitter));
-  glUniform1f(glGetUniformLocation(shaderID, "feedback"), m_feedback);
-  glUniform2fv(glGetUniformLocation(shaderID, "pixelSize"),
-               1,
-               glm::value_ptr(m_pixelSizeScreenSpace));
+
+    glm::vec2 screenSpaceJitter = m_jitterVector[m_jitterCounter] * - 0.5f;
+    glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
+                 1,
+                 glm::value_ptr(screenSpaceJitter));
+    glUniform1f(glGetUniformLocation(shaderID, "feedback"), m_feedback);
+    glUniform2fv(glGetUniformLocation(shaderID, "pixelSize"),
+                 1,
+                 glm::value_ptr(m_pixelSizeScreenSpace));
+
   prim->draw("plane");
 }
 
@@ -247,7 +248,9 @@ void RenderScene::blit(size_t _fbo, GLenum _texture, int _textureUnit)
                      1,
                      false,
                      glm::value_ptr(screenMVP));
+
   prim->draw("plane");
+  //glBindTexture(GL_TEXTURE_2D, 0); //not sure why this is here
 }
 
 void RenderScene::renderScene(size_t _activeAAFBO)
@@ -257,20 +260,16 @@ void RenderScene::renderScene(size_t _activeAAFBO)
   else                                 {glBindFramebuffer(GL_FRAMEBUFFER, 0);}
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
-//  GLuint clearColor[4] = {0, 0, 0, 0};
-//  glClearBufferuiv(GL_COLOR, 0, clearColor);
   ngl::ShaderLib* shader = ngl::ShaderLib::instance();
   GLuint shaderID = shader->getProgramID("beckmannShader");
   shader->use("beckmannShader");
 
   m_lastVP = m_VP;
+
   glm::mat4 M, MV, MVP;
   glm::mat3 N;
   M = glm::mat4(1.f);
-  M = glm::rotate(M, m_arrObj[0].rotation[0], glm::vec3(1.f, 0.f, 0.f));
-  M = glm::rotate(M, m_arrObj[0].rotation[1], glm::vec3(0.f, 1.f, 0.f));
-  M = glm::rotate(M, m_arrObj[0].rotation[2], glm::vec3(0.f, 0.f, 1.f));
-  M = glm::translate(M, m_arrObj[0].position);
+  M = glm::rotate(M, glm::pi<float>() * 0.25f, {0.f, 1.f, 0.f});
   MV = m_view * M;
   glm::mat4 jitterMatrix;
   if (m_activeAA == taa)
@@ -278,19 +277,11 @@ void RenderScene::renderScene(size_t _activeAAFBO)
     glm::vec3 help {m_jitterVector[m_jitterCounter].x, m_jitterVector[m_jitterCounter].y, 0.f};
     jitterMatrix = glm::translate(jitterMatrix, help);
   }
-  //Jitter the VP
   m_VP = jitterMatrix * m_proj * m_view;
-  //Use it to calculate the jittered MVP
   MVP = m_VP * M;
-  //Remove the jitter
   m_VP = m_proj * m_view;
   N = glm::inverse(glm::mat3(M));
 
-
-  glUniformMatrix4fv(glGetUniformLocation(shaderID, "M"),
-                     1,
-                     false,
-                     glm::value_ptr(M));
   glUniformMatrix4fv(glGetUniformLocation(shaderID, "MV"),
                      1,
                      false,
@@ -303,7 +294,7 @@ void RenderScene::renderScene(size_t _activeAAFBO)
                      1,
                      true,
                      glm::value_ptr(N));
-  glUniform1i(glGetUniformLocation(shaderID, "envMapMaxLod"), 10);
+  glUniform1i(glGetUniformLocation(shaderID, "envMapMaxLOD"), 10);
   glUniform3fv(glGetUniformLocation(shaderID, "cameraPos"),
                1,
                glm::value_ptr(m_cameraPos));
@@ -319,6 +310,8 @@ void RenderScene::renderScene(size_t _activeAAFBO)
     glUniform2f(glGetUniformLocation(shaderID, "jitter"), 0.f, 0.f);
   }
 
+
+
   for (auto &obj : m_arrObj)
   {
     glUniform1f(glGetUniformLocation(shaderID, "roughness"), obj.m_shaderProps.m_roughness);
@@ -332,15 +325,6 @@ void RenderScene::renderScene(size_t _activeAAFBO)
                  1,
                  glm::value_ptr(obj.m_shaderProps.m_specularColour));
     glUniform1f(glGetUniformLocation(shaderID, "alpha"), obj.m_shaderProps.m_alpha);
-    glUniform3fv(glGetUniformLocation(shaderID, "objectCentre"),
-                 1,
-                 glm::value_ptr(obj.objectCentre));
-    glUniform3fv(glGetUniformLocation(shaderID, "angularVel"),
-                 1,
-                 glm::value_ptr(obj.angularVelocity));
-    glUniform3fv(glGetUniformLocation(shaderID, "linearVel"),
-                 1,
-                 glm::value_ptr(obj.linearVelocity));
     if (obj.m_shaderProps.m_diffuseTex == taa_checkerboard)
     {
       glUniform1i(glGetUniformLocation(shaderID, "hasDiffMap"), 1);
@@ -356,7 +340,6 @@ void RenderScene::renderScene(size_t _activeAAFBO)
       glUniform1i(glGetUniformLocation(shaderID, "hasDiffMap"), 0);
     }
     obj.m_mesh->draw();
-    obj.update();
   }
 }
 
@@ -440,64 +423,7 @@ void RenderScene::initEnvironmentSide(GLenum _target, const char *_filename)
 }
 
 
-void RenderScene::initRenderFBO()
-{
-  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);
-
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == (GL_FRAMEBUFFER_COMPLETE))
-  {
-   glDeleteTextures(1, &m_arrFBO[m_renderFBO][taa_fboTextureID]);
-   glDeleteTextures(1, &m_arrFBO[m_renderFBO][taa_fboDepthID]);
-   glDeleteTextures(1, &m_arrFBO[m_renderFBO][taa_fboVelID]);
-   glDeleteFramebuffers(1, &m_arrFBO[m_renderFBO][taa_fboID]);
-  }
-
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  glGenTextures(1, &m_arrFBO[m_renderFBO][taa_fboTextureID]);
-  glActiveTexture(m_renderFBOColour);
-  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboTextureID]);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-  glGenTextures(1, &m_arrFBO[m_renderFBO][taa_fboDepthID]);
-  glActiveTexture(m_renderFBODepth);
-  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboDepthID]);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-  glGenTextures(1, &m_arrFBO[m_renderFBO][taa_fboVelID]);
-  glActiveTexture(m_renderFBOVel);
-  glBindTexture(GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboVelID]);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-  float borderColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-  glGenFramebuffers(1, &m_arrFBO[m_renderFBO][taa_fboID]);
-  glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[m_renderFBO][taa_fboID]);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboTextureID], 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboVelID], 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_arrFBO[m_renderFBO][taa_fboDepthID], 0);
-
-  GLenum drawBufs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-  glDrawBuffers(2, drawBufs);
-
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {std::cout<<"Help\n";}
-}
-
-void RenderScene::initAAFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
+void RenderScene::initFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
 {
   glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_fboID][taa_fboID]);
 
@@ -516,8 +442,6 @@ void RenderScene::initAAFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
   glGenTextures(1, &m_arrFBO[_fboID][taa_fboDepthID]);
   glActiveTexture(_textureB);
@@ -525,8 +449,6 @@ void RenderScene::initAAFBO(size_t _fboID, GLenum _textureA, GLenum _textureB)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
   glGenFramebuffers(1, &m_arrFBO[_fboID][taa_fboID]);
   glBindFramebuffer(GL_FRAMEBUFFER, m_arrFBO[_fboID][taa_fboID]);
@@ -551,15 +473,15 @@ void RenderScene::initTexture(const GLuint& texUnit, GLuint &texId, const char *
     glBindTexture(GL_TEXTURE_2D, texId);
 
     glTexImage2D (
-                GL_TEXTURE_2D,
-                0,
-                int(img.format()),
-                int(img.width()),
-                int(img.height()),
-                0,
-                img.format(),
-                GL_UNSIGNED_BYTE,
-                img.getPixels());
+                GL_TEXTURE_2D,    // The target (in this case, which side of the cube)
+                0,                // Level of mipmap to load
+                img.format(),     // Internal format (number of colour components)
+                img.width(),      // Width in pixels
+                img.height(),     // Height in pixels
+                0,                // Border
+                img.format(),     // Format of the pixel data
+                GL_UNSIGNED_BYTE, // Data type of pixel data
+                img.getPixels()); // Pointer to image data in memory
 
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_LINEAR);
