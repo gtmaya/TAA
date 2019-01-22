@@ -1,8 +1,8 @@
 #include "usercamera.h"
 #include <glm/gtx/string_cast.hpp>
 
-UserCamera::UserCamera() : m_position (-17.543415, 50.733370, 22.232615),
-                           m_rotation (4.285187, -0.210000),
+UserCamera::UserCamera() : m_position (100.f, 0.f, 0.f),
+                           m_rotation (0.f, 0.f),
                            m_velocity (0.f, 0.f, 0.f),
                            m_acceleration (0.f, 0.f, 0.f),
                            m_target (-1.f, 0.f, 0.f),
@@ -10,8 +10,8 @@ UserCamera::UserCamera() : m_position (-17.543415, 50.733370, 22.232615),
                            m_height (1),
                            m_fovy(glm::pi<float>() * 0.25f),
                            m_aspect (float(m_width) / float(m_height)),
-                           m_zNear (0.1f),
-                           m_zFar (200.f),
+                           m_zNear (0.5f),
+                           m_zFar (300.f),
                            m_mousePos (NULL, NULL)
 {
   update();
@@ -19,15 +19,15 @@ UserCamera::UserCamera() : m_position (-17.543415, 50.733370, 22.232615),
 
 void UserCamera::reset()
 {
-  m_position = {-17.543415, 5.733370, 22.232615};
-  m_rotation = {4.285187, -0.210000};
+  m_position = {100.f, 0.f, 0.f};
+  m_rotation = {0.f, 0.f};
   m_velocity = {0.f, 0.f, 0.f};
   m_acceleration = {0.f, 0.f, 0.f};
   m_target = {-1.f, 0.f, 0.f};
   m_fovy = glm::pi<float>() * 0.25f;
   m_aspect = float(m_width) / float(m_height);
-  m_zNear = 0.1f;
-  m_zFar = 1000.f;
+  m_zNear = 0.5f;
+  m_zFar = 300.f;
   m_mousePos = {NULL, NULL};
   update();
 }
@@ -55,9 +55,9 @@ void UserCamera::handleMouseClick(const double _xpos, const double _ypos, const 
 
 void UserCamera::handleScroll(const double _xoffset, const double _yoffset)
 {
-//  m_fovy -= 0.05f * float(_yoffset);
-//  if (m_fovy > glm::pi<float>() * 0.5f) {m_fovy = glm::pi<float>() * 0.5f;}
-//  if (m_fovy < glm::pi<float>() * 0.01f) {m_fovy = glm::pi<float>() * 0.01f;}
+  m_fovy -= 0.05f * float(_yoffset);
+  if (m_fovy > glm::pi<float>() * 0.5f) {m_fovy = glm::pi<float>() * 0.5f;}
+  if (m_fovy < glm::pi<float>() * 0.01f) {m_fovy = glm::pi<float>() * 0.01f;}
 }
 
 void UserCamera::handleKey(const int _key, const int _action)
@@ -181,6 +181,8 @@ void UserCamera::update()
   m_target = glm::rotate(m_target, m_rotation.x, glm::vec3(0.f, 1.f, 0.f));
   m_target += m_position;
   m_view = glm::lookAt(m_position, glm::vec3(m_target), glm::vec3(0.0f,1.0f,0.0f));
+  m_aim = glm::rotate(m_aim, m_rotation.y, glm::vec3(0.f, 0.f, 1.f));
+  m_aim = glm::rotate(m_aim, m_rotation.x, glm::vec3(0.f, 1.f, 0.f));
   m_proj = glm::perspective(m_fovy, m_aspect, m_zNear, m_zFar);
   m_cube = glm::lookAt({0.f, 0.f, 0.f}, m_target - m_position, {0.f, 1.f, 0.f});
 
@@ -201,6 +203,11 @@ glm::mat4 UserCamera::projMatrix() const
 glm::mat4 UserCamera::cubeMatrix() const
 {
   return m_cube;
+}
+
+glm::mat4 UserCamera::aimMatrix() const
+{
+  return m_aim;
 }
 
 glm::vec3 UserCamera::getLocation() const

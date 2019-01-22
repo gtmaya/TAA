@@ -157,7 +157,7 @@ void main()
   vec2 uvHISTORY = 0.5 * (screenSpaceHISTORY.xy / screenSpaceHISTORY.w) + 0.5;
 
   vec2 vel = uvCURRENT - uvHISTORY;
-  vel += texture(velocityBUF, uvCURRENT - jitter).rg;
+  vel += texture(velocityBUF, uvCURRENT - jitter).rg * pixelSize;
   uvHISTORY = uvCURRENT - vel;
 
   //Get previous frame colour
@@ -173,7 +173,10 @@ void main()
   vec3 colourHISTORYCLIPPEDBLEND = mix(colourHISTORY.rgb, colourHISTORYCLIPPED, clamp(clipBlendFactor * 1.f, 0.f, 1.f));
 
   FragColour.rgb = mix(colourHISTORYCLIPPEDBLEND, colourCURRENT.rgb, feedback);
-  FragColour = texture(velocityBUF, uvCURRENT - jitter);
+//  FragColour.rg = abs(vel);
+//  FragColour.a = 1.f;
+//  FragColour.b = 0.f;
+//  FragColour.rg /= pixelSize;
 }
 
 

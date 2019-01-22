@@ -15,6 +15,7 @@ struct ObjHandler
     glm::vec3 linearVelocity;
     glm::vec3 position;
     glm::vec3 rotation;
+    glm::mat4 previousMVP;
     void update();
 };
 

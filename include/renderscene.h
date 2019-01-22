@@ -21,6 +21,7 @@ class RenderScene
     void setViewMatrix(glm::mat4 _view);
     void setProjMatrix(glm::mat4 _proj);
     void setCubeMatrix(glm::mat4 _cube);
+    void setCamAimMatrix(glm::mat4 _aim);
     void setCameraLocation(glm::vec3 _location);
     void setAAMethod(int _method);
     void resetTAA();
@@ -31,6 +32,7 @@ class RenderScene
     void renderScene(size_t _activeAAFBO);
     void blit(size_t _fbo, GLenum _texture, int _textureUnit);
     void antialias(size_t _activeAAFBO);
+    void velocityPass();
     void initRenderFBO();
     void initAAFBO(size_t _fboID, GLenum _textureA, GLenum _textureB);
     void initEnvironment();
@@ -86,6 +88,7 @@ class RenderScene
     glm::mat4 m_VP;
     glm::mat4 m_lastVP;
     glm::mat4 m_cube;
+    glm::mat4 m_camAim;
 
     std::array<ObjHandler, 1> m_arrObj;
 

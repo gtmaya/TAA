@@ -55,10 +55,6 @@ void RenderScene::initGL() noexcept
                      "shaders/env_v.glsl",
                      "shaders/env_f.glsl");
 
-  shader->loadShader("phongShader",
-                     "shaders/phong_v.glsl",
-                     "shaders/phong_f.glsl");
-
   shader->loadShader("beckmannShader",
                      "shaders/beckmann_v.glsl",
                      "shaders/beckmann_f.glsl");
@@ -121,19 +117,19 @@ void RenderScene::paintGL() noexcept
     //Blit
     if (m_flip)
     {
-      blit(m_aaFBO1, m_aaFBOColour1, m_aaColourTU1);
-//      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-//      glBindFramebuffer(GL_READ_FRAMEBUFFER, m_aaFBOColour1);
-//      glDrawBuffer(GL_BACK);
-//      glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+//      blit(m_aaFBO1, m_aaFBOColour1, m_aaColourTU1);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, m_aaFBOColour1);
+      glDrawBuffer(GL_BACK);
+      glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
     else
     {
-      blit(m_aaFBO2, m_aaFBOColour2, m_aaColourTU2);
-//      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-//      glBindFramebuffer(GL_READ_FRAMEBUFFER, m_aaFBOColour2);
-//      glDrawBuffer(GL_BACK);
-//      glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+//      blit(m_aaFBO2, m_aaFBOColour2, m_aaColourTU2);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, m_aaFBOColour2);
+      glDrawBuffer(GL_BACK);
+      glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
 
     //Cycle jitter
@@ -257,21 +253,11 @@ void RenderScene::renderScene(size_t _activeAAFBO)
   else                                 {glBindFramebuffer(GL_FRAMEBUFFER, 0);}
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
-//  GLuint clearColor[4] = {0, 0, 0, 0};
-//  glClearBufferuiv(GL_COLOR, 0, clearColor);
   ngl::ShaderLib* shader = ngl::ShaderLib::instance();
   GLuint shaderID = shader->getProgramID("beckmannShader");
   shader->use("beckmannShader");
 
   m_lastVP = m_VP;
-  glm::mat4 M, MV, MVP;
-  glm::mat3 N;
-  M = glm::mat4(1.f);
-  M = glm::rotate(M, m_arrObj[0].rotation[0], glm::vec3(1.f, 0.f, 0.f));
-  M = glm::rotate(M, m_arrObj[0].rotation[1], glm::vec3(0.f, 1.f, 0.f));
-  M = glm::rotate(M, m_arrObj[0].rotation[2], glm::vec3(0.f, 0.f, 1.f));
-  M = glm::translate(M, m_arrObj[0].position);
-  MV = m_view * M;
   glm::mat4 jitterMatrix;
   if (m_activeAA == taa)
   {
@@ -280,47 +266,49 @@ void RenderScene::renderScene(size_t _activeAAFBO)
   }
   //Jitter the VP
   m_VP = jitterMatrix * m_proj * m_view;
-  //Use it to calculate the jittered MVP
-  MVP = m_VP * M;
-  //Remove the jitter
-  m_VP = m_proj * m_view;
-  N = glm::inverse(glm::mat3(M));
 
-
-  glUniformMatrix4fv(glGetUniformLocation(shaderID, "M"),
-                     1,
-                     false,
-                     glm::value_ptr(M));
-  glUniformMatrix4fv(glGetUniformLocation(shaderID, "MV"),
-                     1,
-                     false,
-                     glm::value_ptr(MV));
-  glUniformMatrix4fv(glGetUniformLocation(shaderID, "MVP"),
-                     1,
-                     false,
-                     glm::value_ptr(MVP));
-  glUniformMatrix3fv(glGetUniformLocation(shaderID, "N"),
-                     1,
-                     true,
-                     glm::value_ptr(N));
   glUniform1i(glGetUniformLocation(shaderID, "envMapMaxLod"), 10);
   glUniform3fv(glGetUniformLocation(shaderID, "cameraPos"),
                1,
                glm::value_ptr(m_cameraPos));
-  if (m_activeAA == taa)
-  {
-    glm::vec2 jit = m_jitterVector[m_jitterCounter] * - 0.5f;
-    glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
-                 1,
-                 glm::value_ptr(jit));
-  }
-  else
-  {
-    glUniform2f(glGetUniformLocation(shaderID, "jitter"), 0.f, 0.f);
-  }
 
   for (auto &obj : m_arrObj)
   {
+    glm::mat4 M, MV, MVP;
+    glm::mat3 N;
+    M = glm::mat4(1.f);
+    M = glm::rotate(M, obj.rotation[0], glm::vec3(1.f, 0.f, 0.f));
+    M = glm::rotate(M, obj.rotation[1], glm::vec3(0.f, 1.f, 0.f));
+    M = glm::rotate(M, obj.rotation[2], glm::vec3(0.f, 0.f, 1.f));
+    M = glm::translate(M, obj.position);
+    static bool isFirstFrame = true;
+    if (isFirstFrame) {obj.previousMVP = M;}
+    isFirstFrame = false;
+    MV = m_view * M;
+    MVP = m_VP * M;
+    glm::mat4 MVPNoJitter = m_proj * m_view * M;
+    N = glm::inverse(glm::mat3(M));
+
+    glUniformMatrix4fv(glGetUniformLocation(shaderID, "MV"),
+                       1,
+                       false,
+                       glm::value_ptr(MV));
+    glUniformMatrix4fv(glGetUniformLocation(shaderID, "MVPNJPrevious"),
+                       1,
+                       false,
+                       glm::value_ptr(obj.previousMVP));
+    glUniformMatrix4fv(glGetUniformLocation(shaderID, "MVPNoJitter"),
+                       1,
+                       false,
+                       glm::value_ptr(MVPNoJitter));
+    glUniformMatrix4fv(glGetUniformLocation(shaderID, "MVP"),
+                       1,
+                       false,
+                       glm::value_ptr(MVP));
+    glUniformMatrix3fv(glGetUniformLocation(shaderID, "N"),
+                       1,
+                       true,
+                       glm::value_ptr(N));
     glUniform1f(glGetUniformLocation(shaderID, "roughness"), obj.m_shaderProps.m_roughness);
     glUniform1f(glGetUniformLocation(shaderID, "metallic"), obj.m_shaderProps.m_metallic);
     glUniform1f(glGetUniformLocation(shaderID, "diffAmount"), obj.m_shaderProps.m_diffuseWeight);
@@ -332,15 +320,6 @@ void RenderScene::renderScene(size_t _activeAAFBO)
                  1,
                  glm::value_ptr(obj.m_shaderProps.m_specularColour));
     glUniform1f(glGetUniformLocation(shaderID, "alpha"), obj.m_shaderProps.m_alpha);
-    glUniform3fv(glGetUniformLocation(shaderID, "objectCentre"),
-                 1,
-                 glm::value_ptr(obj.objectCentre));
-    glUniform3fv(glGetUniformLocation(shaderID, "angularVel"),
-                 1,
-                 glm::value_ptr(obj.angularVelocity));
-    glUniform3fv(glGetUniformLocation(shaderID, "linearVel"),
-                 1,
-                 glm::value_ptr(obj.linearVelocity));
     if (obj.m_shaderProps.m_diffuseTex == taa_checkerboard)
     {
       glUniform1i(glGetUniformLocation(shaderID, "hasDiffMap"), 1);
@@ -357,7 +336,10 @@ void RenderScene::renderScene(size_t _activeAAFBO)
     }
     obj.m_mesh->draw();
     obj.update();
+    obj.previousMVP = MVPNoJitter;
   }
+  //Remove the jitter
+  m_VP = m_proj * m_view;
 }
 
 void RenderScene::setViewMatrix(glm::mat4 _view)
@@ -377,6 +359,11 @@ void RenderScene::setCubeMatrix(glm::mat4 _cube)
   m_cube = _cube;
 }
 
+void RenderScene::setCamAimMatrix(glm::mat4 _aim)
+{
+  m_camAim = _aim;
+}
+
 void RenderScene::setCameraLocation(glm::vec3 _location)
 {
   m_cameraPos = _location;
@@ -389,7 +376,7 @@ void RenderScene::setAAMethod(int _method)
 
 void RenderScene::resetTAA()
 {
-  m_aaDirty = true;
+  if (m_activeAA != msaa) {m_aaDirty = true;}
 }
 
 void RenderScene::initEnvironment()

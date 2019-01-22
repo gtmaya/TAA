@@ -23,6 +23,7 @@ class UserCamera
     glm::mat4 viewMatrix() const;
     glm::mat4 projMatrix() const;
     glm::mat4 cubeMatrix() const;
+    glm::mat4 aimMatrix() const;
     glm::vec3 getLocation() const;
     void toggleCursorState();
     bool cursorActive() const;
@@ -35,6 +36,7 @@ class UserCamera
     glm::vec3 m_velocity;
     glm::vec3 m_acceleration;
     glm::vec3 m_target;
+    glm::mat4 m_aim;
     int m_width;
     int m_height;
     glm::mat4 m_view;

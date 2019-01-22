@@ -31,7 +31,7 @@ in vec4 fragPosition;
 in vec2 fragTexCoord;
 in vec3 worldPos;
 in vec3 viewSpacePos;
-in vec3 worldSpaceVel;
+in vec2 screenSpaceVel;
 
 
 //Constants
@@ -113,5 +113,5 @@ void main()
                    (specularIntensity * specComponent * specAmount * materialSpec));
   }
   FragColor = vec4(totalLight , alpha);
-  velocity = worldSpaceVel.xyz;
+  velocity = vec3(screenSpaceVel, 0.f);
 }

@@ -56,7 +56,7 @@ void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int
       case (GLFW_KEY_ENTER):
       {
         r_camera.reset();
-        r_scene.resetTAA();
+//        r_scene.resetTAA();
         break;
       }
       case (GLFW_KEY_1):
@@ -107,8 +107,8 @@ int main()
   glfwSetErrorCallback(error_callback);
 
   // Set our OpenGL version
-  //glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
-  //glfwWindowHint(GLFW_SAMPLES, 16);
+//  glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
+//  glfwWindowHint(GLFW_SAMPLES, 16);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
@@ -169,6 +169,7 @@ int main()
     r_scene.setViewMatrix(r_camera.viewMatrix());
     r_scene.setProjMatrix(r_camera.projMatrix());
     r_scene.setCubeMatrix(r_camera.cubeMatrix());
+    r_scene.setCamAimMatrix(r_camera.aimMatrix());
     r_scene.setCameraLocation(r_camera.getLocation());
 
     r_scene.paintGL();
