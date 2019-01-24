@@ -1,3 +1,18 @@
+/****************************************************************************************************************
+/__/\\\\\\\\\\\\\\\_____/\\\\\\\\\________/\\\\\\\\\____________/                                               |
+/__\///////\\\/////____/\\\\\\\\\\\\\____/\\\\\\\\\\\\\_________/   Callum James Glover                         |
+/_________\/\\\________/\\\/////////\\\__/\\\/////////\\\_______/   NCCA, Bournemouth University                |
+/__________\/\\\_______\/\\\_______\/\\\_\/\\\_______\/\\\______/   s4907224@bournemouth.ac.uk                  |
+/___________\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\\\\\\\\\\\\\_____/   callum@glovefx.com                          |
+/____________\/\\\_______\/\\\/////////\\\_\/\\\/////////\\\____/   07946 750075                                |
+/_____________\/\\\_______\/\\\_______\/\\\_\/\\\_______\/\\\___/   Level 6 Computing for Animation Project     |
+/______________\/\\\_______\/\\\_______\/\\\_\/\\\_______\/\\\__/   https://github.com/NCCA/CA1-2018-s4907224   |
+/_______________\///________\///________\///__\///________\///__/                                               |
+****************************************************************************************************************/
+//---------------------------------------------------------------------------------------------------------------
+/// @file renderscene.h
+/// @brief Handles rendering of the scene, and contains main TAA routine.
+//---------------------------------------------------------------------------------------------------------------
 #ifndef RENDERSCENE_H
 #define RENDERSCENE_H
 
@@ -21,15 +36,14 @@ class RenderScene
     void setViewMatrix(glm::mat4 _view);
     void setProjMatrix(glm::mat4 _proj);
     void setCubeMatrix(glm::mat4 _cube);
-    void setCamAimMatrix(glm::mat4 _aim);
     void setCameraLocation(glm::vec3 _location);
     void setAAMethod(int _method);
     void resetTAA();
     void increaseFeedback(float _delta);
-    enum m_aaMethod{taa, msaa, none};
+    enum m_aaMethod{taa, noPass, none};
 
   private:
-    void renderScene(size_t _activeAAFBO);
+    void beckmannRender(size_t _activeAAFBO);
     void blit(size_t _fbo, GLenum _texture, int _textureUnit);
     void antialias(size_t _activeAAFBO);
     void velocityPass();
@@ -37,10 +51,14 @@ class RenderScene
     void initAAFBO(size_t _fboID, GLenum _textureA, GLenum _textureB);
     void initEnvironment();
     void initEnvironmentSide(GLenum _target, const char *_filename);
-    void initTexture(const GLuint& texUnit, GLuint &texId, const char *filename);
+    void initTexture(const GLuint& _texUnit, GLuint &_texId, const char *_filename);
     void updateJitter();
     bool m_isFBODirty = true;
     bool m_aaDirty = true;
+
+    GLint   m_width;
+    GLint   m_height;
+    GLfloat m_ratio;
 
     std::chrono::high_resolution_clock::time_point m_startTime;
     std::chrono::high_resolution_clock::time_point m_prevFrameTime;
@@ -51,7 +69,7 @@ class RenderScene
 
     GLuint m_checkerboardTex;
     GLuint m_dirtTex;
-    enum m_textures {taa_none = 0, taa_checkerboard = 7, taa_dirt};
+    enum m_textures {taa_none = 0, taa_checkerboard = 8, taa_dirt};
 
     size_t m_renderFBO = 0;
     size_t m_aaFBO1    = 1;
@@ -74,10 +92,6 @@ class RenderScene
     int    m_aaDepthTU2      = 7;
 
     GLuint m_envTex;
-
-    GLint   m_width;
-    GLint   m_height;
-    GLfloat m_ratio;
 
     glm::vec3 m_cameraPos;
 

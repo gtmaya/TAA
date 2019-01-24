@@ -24,14 +24,10 @@ SOURCES +=      src/main.cpp \
 DISTFILES +=    $OTHER_FILES \
     shaders/env_f.glsl \
     shaders/env_v.glsl \
-    shaders/blit_v.glsl \
-    shaders/blit_f.glsl \
     shaders/beckmann_v.glsl \
     shaders/beckmann_f.glsl \
     shaders/taa_f.glsl \
-    shaders/taa_v.glsl \
-    shaders/velocity_f.glsl \
-    shaders/velocity_v.glsl
+    shaders/taa_v.glsl
 
 QMAKE_CXXFLAGS+=$$system(sdl2-config  --cflags)
 message(output from sdl2-config --cflags added to CXXFLAGS= $$QMAKE_CXXFLAGS)

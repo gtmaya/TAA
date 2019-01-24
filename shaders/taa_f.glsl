@@ -1,3 +1,14 @@
+/****************************************************************************************************************
+/__/\\\\\\\\\\\\\\\_____/\\\\\\\\\________/\\\\\\\\\____________/                                               |
+/__\///////\\\/////____/\\\\\\\\\\\\\____/\\\\\\\\\\\\\_________/   Callum James Glover                         |
+/_________\/\\\________/\\\/////////\\\__/\\\/////////\\\_______/   NCCA, Bournemouth University                |
+/__________\/\\\_______\/\\\_______\/\\\_\/\\\_______\/\\\______/   s4907224@bournemouth.ac.uk                  |
+/___________\/\\\_______\/\\\\\\\\\\\\\\\_\/\\\\\\\\\\\\\\\_____/   callum@glovefx.com                          |
+/____________\/\\\_______\/\\\/////////\\\_\/\\\/////////\\\____/   07946 750075                                |
+/_____________\/\\\_______\/\\\_______\/\\\_\/\\\_______\/\\\___/   Level 6 Computing for Animation Project     |
+/______________\/\\\_______\/\\\_______\/\\\_\/\\\_______\/\\\__/   https://github.com/NCCA/CA1-2018-s4907224   |
+/_______________\///________\///________\///__\///________\///__/                                               |
+****************************************************************************************************************/
 #version 430
 
 uniform mat4 inverseViewProjectionCURRENT;
@@ -148,13 +159,13 @@ void main()
 
   //Convert current screenspace to world space
   float z = depthCURRENT * 2.0 - 1.0;
-  vec4 screenSpaceCURRENT = vec4((uvCURRENT) * 2.f - 1.f, z, 1.f);
-  vec4 worldSpacePosition = inverseViewProjectionCURRENT * screenSpaceCURRENT;
+  vec4 CVVPosCURRENT = vec4((uvCURRENT) * 2.f - 1.f, z, 1.f);
+  vec4 worldSpacePosition = inverseViewProjectionCURRENT * CVVPosCURRENT;
   worldSpacePosition /= worldSpacePosition.w;
 
   //Convert this into previous UV coords.
-  vec4 screenSpaceHISTORY = viewProjectionHISTORY * worldSpacePosition;
-  vec2 uvHISTORY = 0.5 * (screenSpaceHISTORY.xy / screenSpaceHISTORY.w) + 0.5;
+  vec4 CVVPosHISTORY = viewProjectionHISTORY * worldSpacePosition;
+  vec2 uvHISTORY = 0.5 * (CVVPosHISTORY.xy / CVVPosHISTORY.w) + 0.5;
 
   vec2 vel = uvCURRENT - uvHISTORY;
   vel += texture(velocityBUF, uvCURRENT - jitter).rg * pixelSize;
@@ -173,10 +184,11 @@ void main()
   vec3 colourHISTORYCLIPPEDBLEND = mix(colourHISTORY.rgb, colourHISTORYCLIPPED, clamp(clipBlendFactor * 1.f, 0.f, 1.f));
 
   FragColour.rgb = mix(colourHISTORYCLIPPEDBLEND, colourCURRENT.rgb, feedback);
-//  FragColour.rg = abs(vel);
+//  FragColour.rg = vel;
 //  FragColour.a = 1.f;
 //  FragColour.b = 0.f;
 //  FragColour.rg /= pixelSize;
+//  FragColour.rg *= 10.f;
 }
 
 
