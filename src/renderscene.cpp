@@ -63,7 +63,12 @@ void RenderScene::initGL() noexcept
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_MULTISAMPLE);
 
-  m_arrObj[0].m_mesh = new ngl::Obj("models/dino.obj");
+  m_arrObj[0].m_mesh = new ngl::Obj("models/plane.obj");
+  m_arrObj[1].m_mesh = new ngl::Obj("models/torus.obj");
+  m_arrObj[2].m_mesh = new ngl::Obj("models/platonic.obj");
+  m_arrObj[3].m_mesh = new ngl::Obj("models/cube.obj");
+  m_arrObj[4].m_mesh = new ngl::Obj("models/text.obj");
+  m_arrObj[5].m_mesh = new ngl::Obj("models/gear.obj");
   m_arrObj[0].m_shaderProps.m_diffuseTex = taa_checkerboard;
   m_arrObj[0].m_shaderProps.m_diffuseWeight = 0.25f;
   m_arrObj[0].m_shaderProps.m_specularWeight = 0.25f;
@@ -76,10 +81,6 @@ void RenderScene::initGL() noexcept
 
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 
-  shader->loadShader("environmentShader",
-                     "shaders/env_v.glsl",
-                     "shaders/env_f.glsl");
-
   shader->loadShader("beckmannShader",
                      "shaders/beckmann_v.glsl",
                      "shaders/beckmann_f.glsl");
@@ -87,6 +88,10 @@ void RenderScene::initGL() noexcept
   shader->loadShader("taaShader",
                      "shaders/taa_v.glsl",
                      "shaders/taa_f.glsl");
+
+  shader->loadShader("blitShader",
+                     "shaders/blit_v.glsl",
+                     "shaders/blit_f.glsl");
 
   initEnvironment();
   initTexture(taa_checkerboard, m_checkerboardTex, "images/checkerboard.jpg");
@@ -233,10 +238,6 @@ void RenderScene::antialias(size_t _activeAAFBO)
                      1,
                      false,
                      glm::value_ptr(inverseVPC));
-  glUniformMatrix4fv(glGetUniformLocation(shaderID, "VPCURRENT"),
-                     1,
-                     false,
-                     glm::value_ptr(m_VP));
   glUniformMatrix4fv(glGetUniformLocation(shaderID, "viewProjectionHISTORY"),
                      1,
                      false,
@@ -245,7 +246,11 @@ void RenderScene::antialias(size_t _activeAAFBO)
                      1,
                      false,
                      glm::value_ptr(screenMVP));
-  glm::vec2 screenSpaceJitter = m_jitterVector[m_jitterCounter] * - 0.5f;
+  glUniformMatrix4fv(glGetUniformLocation(shaderID, "invJitter"),
+                     1,
+                     false,
+                     glm::value_ptr(m_invJitter));
+  glm::vec2 screenSpaceJitter = m_jitterVector[m_jitterCounter] * -0.5f;
   glUniform2fv(glGetUniformLocation(shaderID, "jitter"),
                1,
                glm::value_ptr(screenSpaceJitter));
@@ -314,6 +319,7 @@ void RenderScene::beckmannRender(size_t _activeAAFBO)
   }
   //Jitter the VP
   m_VP = jitterMatrix * m_proj * m_view;
+  m_invJitter = glm::inverse(jitterMatrix);
 
   glUniform1i(glGetUniformLocation(shaderID, "envMapMaxLod"), 10);
   glUniform3fv(glGetUniformLocation(shaderID, "cameraPos"),

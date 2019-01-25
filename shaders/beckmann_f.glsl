@@ -9,10 +9,16 @@
 /______________\/\\\_______\/\\\_______\/\\\_\/\\\_______\/\\\__/   https://github.com/NCCA/CA1-2018-s4907224   |
 /_______________\///________\///________\///__\///________\///__/                                               |
 ****************************************************************************************************************/
+//---------------------------------------------------------------------------------------------------------------
+/// @file beckmann_f.glsl
+/// @brief This shader is partially modified from a previous project, available at
+/// https://github.com/s4907224/s4907224_GLSL
+//---------------------------------------------------------------------------------------------------------------
 #version 430
 
 //FragColor
 layout (location = 0) out vec4 FragColor;
+//Velocity drawbuf
 layout (location = 1) out vec3 velocity;
 
 //Light info
@@ -82,6 +88,8 @@ vec3 specularComponent(vec3 _n, vec3 _v, vec3 _s, float _roughness, vec3 _fInc)
   vec3 F = vec3(F_r, F_g, F_b);
 
   // Compute the light from the ambient, diffuse and specular components
+  //As I changed the way my camera handles in this project compared to the previous project this file comes from, NdotV breaks, so I just don't use it.
+  //Essentially ignore this file other than the velocity line at the bottom, as this is simply to make things look a bit nicer than standard phong shading.
   return F * D /*/ NdotV*/;
 }
 
@@ -124,5 +132,6 @@ void main()
                    (specularIntensity * specComponent * specAmount * materialSpec));
   }
   FragColor = vec4(totalLight , alpha);
+  //Interpolate the vertex velocity across fragments.
   velocity = vec3(screenSpaceVel, 0.f);
 }

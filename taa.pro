@@ -22,8 +22,6 @@ SOURCES +=      src/main.cpp \
                 src/shaderhandler.cpp
 
 DISTFILES +=    $OTHER_FILES \
-    shaders/env_f.glsl \
-    shaders/env_v.glsl \
     shaders/beckmann_v.glsl \
     shaders/beckmann_f.glsl \
     shaders/taa_f.glsl \

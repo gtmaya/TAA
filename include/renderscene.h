@@ -102,9 +102,9 @@ class RenderScene
     glm::mat4 m_VP;
     glm::mat4 m_lastVP;
     glm::mat4 m_cube;
-    glm::mat4 m_camAim;
+    glm::mat4 m_invJitter;
 
-    std::array<ObjHandler, 1> m_arrObj;
+    std::array<ObjHandler, 6> m_arrObj;
 
     std::array<glm::vec2, 16> m_sampleVector
     {

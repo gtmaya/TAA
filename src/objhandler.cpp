@@ -27,9 +27,12 @@ ObjHandler::ObjHandler() : m_shaderProps ({1.f, 1.f, 1.f},
                                            1.f,
                                            99999),
                             objectCentre (0.f, 0.f, 0.f),
-                            angularVelocity (0.f, 0.01f, 0.f),
+                            angularVelocity (0.f, 1.f, 0.f),
                             linearVelocity (0.f, 0.f, 0.f)
-{}
+{
+  m_now = std::chrono::high_resolution_clock::now();
+  m_last = std::chrono::high_resolution_clock::now();
+}
 //---------------------------------------------------------------------------------------------------------------
 /// @brief Default destructor.
 //---------------------------------------------------------------------------------------------------------------
@@ -40,12 +43,10 @@ ObjHandler::~ObjHandler() = default;
 //---------------------------------------------------------------------------------------------------------------
 void ObjHandler::update()
 {
-  auto now = std::chrono::high_resolution_clock::now();
-  static auto last = std::chrono::high_resolution_clock::now();
-  float delta = std::chrono::duration_cast<std::chrono::nanoseconds>(now - last).count();
-  last = now;
+  m_now = std::chrono::high_resolution_clock::now();
+  float delta = std::chrono::duration_cast<std::chrono::nanoseconds>(m_now - m_last).count();
+  m_last = m_now;
   delta *= 0.000000001f;
-
   position += linearVelocity * delta;
   rotation += angularVelocity * delta;
 }

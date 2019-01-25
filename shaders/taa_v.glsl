@@ -9,6 +9,8 @@
 /______________\/\\\_______\/\\\_______\/\\\_\/\\\_______\/\\\__/   https://github.com/NCCA/CA1-2018-s4907224   |
 /_______________\///________\///________\///__\///________\///__/                                               |
 ****************************************************************************************************************/
+/// @file taa_v.glsl
+/// @brief A simple passthrough vertex shader for essentially blitting a texture to a quad.
 #version 430
 
 layout (location=0) in vec3 VertexPosition;

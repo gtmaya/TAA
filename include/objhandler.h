@@ -31,6 +31,8 @@ struct ObjHandler
     glm::vec3 position;
     glm::vec3 rotation;
     glm::mat4 previousMVP;
+    std::chrono::high_resolution_clock::time_point m_now = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point m_last = std::chrono::high_resolution_clock::now();
     void update();
 };
 
